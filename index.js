@@ -1,44 +1,51 @@
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { MongoClient } from "mongodb"
+import User from "./models/User.js";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-const mongo_uri = `mongodb+srv://${process.env.MONGODB_ATLAS_USERNAME}:${process.env.MONGODB_ATLAS_PASSWORD}@split-n-share.e8f54.mongodb.net/?retryWrites=true&w=majority&appName=split-n-share`;
+const mongo_uri = `mongodb+srv://${process.env.MONGODB_ATLAS_USERNAME}:${process.env.MONGODB_ATLAS_PASSWORD}@split-n-share.e8f54.mongodb.net/split-n-share?retryWrites=true&w=majority`;
 
 const connectMongoDB = async () => {
-    const client = new MongoClient (mongo_uri);
-
     try {
-
-        await client.connect();
-        console.log('Connected to MongoDB Atlas');
-    
-        const database = client.db('testDatabase');
-        const collection = database.collection('testCollection');
-    
-        const doc = { name: 'Sagnik', age: 22, city: 'Pune' };
-        const result = await collection.insertOne(doc);
-        console.log('Document inserted with _id:', result.insertedId);
-    
-        const documents = await collection.find({}).toArray();
-        console.log('Documents:', documents);
-    
-      } 
-        
-      catch (error) {
-        console.error('Error connecting to MongoDB:', error);
+        await mongoose.connect(mongo_uri, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+        });
+        console.log("Connected to MongoDB Atlas using Mongoose");
+    } catch (error) {
+        console.error("Error connecting to MongoDB:", error);
     }
-}
+};
 
-app.get ('/', async (req, res) => {
-    connectMongoDB();
-    res.send ('Hello World!');
-})
+connectMongoDB();
 
-app.listen (port, () => {
-    console.log (`Server running successfully on port number ${port}`);
-})
+app.get("/", async (req, res) => {
+    try {
+        const user1 = new User({
+            firstName: "Sagnik",
+            lastName: "Das",
+            email: "sagnik1@email.com",
+            password: "sagnik123",
+            mobileNumber: "XXXXXXXXXX",
+            location: "Pune",
+            occupation: "Software Engineer",
+            gender: "Male",
+        });
+
+        const result = await user1.save();
+        console.log("User data pushed successfully");
+
+        res.send("User created successfully!" + result);
+    } catch (error) {
+        console.error("Error saving user:", error);
+        res.status(500).send("Error creating user");
+    }
+});
+
+app.listen(port, () => {
+    console.log(`Server running successfully on port number ${port}`);
+});
