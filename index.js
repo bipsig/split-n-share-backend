@@ -2,11 +2,16 @@ import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import User from "./models/User.js";
+import authRoutes from './routes/auth.js'
 
 dotenv.config();
 
+
 const app = express();
+app.use (express.json());
+
 const port = process.env.PORT || 3000;
+
 const mongo_uri = `mongodb+srv://${process.env.MONGODB_ATLAS_USERNAME}:${process.env.MONGODB_ATLAS_PASSWORD}@split-n-share.e8f54.mongodb.net/split-n-share?retryWrites=true&w=majority`;
 
 const connectMongoDB = async () => {
@@ -28,9 +33,9 @@ app.get("/", async (req, res) => {
         const user1 = new User({
             firstName: "Sagnik",
             lastName: "Das",
-            email: "sagnik1@email.com",
+            email: "sagnik2@email.com",
             password: "sagnik123",
-            mobileNumber: "XXXXXXXXXX",
+            mobileNumber: "XXXXXXXXX",
             location: "Pune",
             occupation: "Software Engineer",
             gender: "Male",
@@ -45,6 +50,8 @@ app.get("/", async (req, res) => {
         res.status(500).send("Error creating user");
     }
 });
+
+app.use ('/auth', authRoutes);
 
 app.listen(port, () => {
     console.log(`Server running successfully on port number ${port}`);
