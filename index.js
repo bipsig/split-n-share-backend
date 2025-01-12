@@ -30,21 +30,10 @@ connectMongoDB();
 
 app.get("/", async (req, res) => {
     try {
-        const user1 = new User({
-            firstName: "Sagnik",
-            lastName: "Das",
-            email: "sagnik2@email.com",
-            password: "sagnik123",
-            mobileNumber: "XXXXXXXXX",
-            location: "Pune",
-            occupation: "Software Engineer",
-            gender: "Male",
-        });
+        mongoose.set('autoIndex', true);
+        const result = await User.syncIndexes();
 
-        const result = await user1.save();
-        console.log("User data pushed successfully");
-
-        res.send("User created successfully!" + result);
+        res.send("Indexes synced!" + result);
     } catch (error) {
         console.error("Error saving user:", error);
         res.status(500).send("Error creating user");

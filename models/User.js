@@ -19,6 +19,14 @@
                 required: [true, 'Email is required'],
                 unique: [true, 'Email is already in use']
             },
+            username: {
+                type: String,
+                required: [true, 'Username is required'],
+                unique: [true, 'Username already exists!'],
+                minlength: [3, 'Username should atleast contain 3 characters'],
+                maxlength: [20, 'Username can have maximum 20 characters'],
+                match: [/^[a-zA-Z0-9\._@]+$/, "Username can only contain alphanumeric characters and ., _ and @"]
+            },
             password: {
                 type: String,
                 required: [true, 'Password cannot be empty'],
