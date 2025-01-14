@@ -4,6 +4,7 @@ import morgan from "morgan";
 import mongoose from "mongoose";
 import User from "./models/User.js";
 import authRoutes from './routes/auth.js'
+import { validateToken } from "./middleware/auth.js";
 
 dotenv.config();
 
@@ -40,6 +41,20 @@ app.get("/", async (req, res) => {
         res.status(500).send("Error creating user");
     }
 });
+
+
+app.get("/users", validateToken, async (req, res) => {
+    try {
+        console.log (req.user);
+        const users = await User.find({ username: req.user.username });
+        console.log (users);
+
+        res.status(200).json(users);
+    }
+    catch (err) {
+        console.error(err.message);
+    }
+})
 
 app.use ('/auth', authRoutes);
 
