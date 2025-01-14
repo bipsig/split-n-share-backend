@@ -1,14 +1,15 @@
 import express from "express";
 import dotenv from "dotenv";
+import morgan from "morgan";
 import mongoose from "mongoose";
 import User from "./models/User.js";
 import authRoutes from './routes/auth.js'
 
 dotenv.config();
 
-
 const app = express();
 app.use (express.json());
+app.use (morgan ('dev'));
 
 const port = process.env.PORT || 3000;
 
