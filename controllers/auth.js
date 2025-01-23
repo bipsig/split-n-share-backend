@@ -42,7 +42,7 @@ export const login = async (req, res) => {
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
-        console.log (isMatch);
+        // console.log (isMatch);
 
         if (!isMatch) {
             return res.status(401).json({
@@ -53,12 +53,17 @@ export const login = async (req, res) => {
         const payload = {
             firstName: user.firstName,
             lastName: user.lastName,
-            username: user.username
+            username: user.username,
+            loginTime: new Date().toUTCString()
         };
+        console.log (payload);
 
         user.password = undefined;
 
-        const accessToken = jwt.sign(payload, process.env.JWT_SECRET);
+        const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
+            expiresIn: process.env.JWT_TIMEOUT
+        });
+        
         return res.status(200).json({
             accessToken: accessToken
         });
