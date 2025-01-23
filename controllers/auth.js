@@ -91,6 +91,18 @@ export const logout = async (req, res) => {
             });
         }
 
+        const result = await Blacklist.find({
+            token: token
+        });
+
+        console.log (result);
+
+        if (result.length > 0) {
+            return res.status(200).json({
+                message: 'Token already added to Blacklist'
+            })
+        }
+
         const decodedToken = jwt.decode(token);
         // console.log (decodedToken);
         const expiresAt = new Date(decodedToken.exp * 1000)
@@ -119,7 +131,7 @@ export const cleanup = async (req, res) => {
     console.log ('Clearing the expired tokens');
     try {
         const currentDate = new Date();
-        console.log (currentDate);
+        // console.log (currentDate);
 
         const result = await Blacklist.deleteMany({
             expiresAt: {$lt: currentDate}
