@@ -80,8 +80,8 @@ export const login = async (req, res) => {
 
 /* LOGGING OUT A USER */
 export const logout = async (req, res) => {
+    console.log ("Logging out the User");
     try {
-        console.log ("Logging out the User");
         const authHeader = req.headers["authorization"];
         const token = authHeader && authHeader.split (' ')[1];
     
@@ -109,6 +109,36 @@ export const logout = async (req, res) => {
     catch (err) {
         console.log ('Unable to logout the User');
         res.status(500).json( {
+            error: err.message
+        })
+    }
+}
+
+/* CLEANING the Database to remove the expired tokens */
+export const cleanup = async (req, res) => {
+    console.log ('Clearing the expired tokens');
+    try {
+        const currentDate = new Date();
+        console.log (currentDate);
+
+        const result = await Blacklist.deleteMany({
+            expiresAt: {$lt: currentDate}
+        });
+
+        // console.log (result);
+        if (parseInt(result.deletedCount) === 0) {
+            res.status(200).json({
+                message: 'No expired tokens in the database'
+            });
+        }
+        else {
+            res.status(200).json({
+                message: `${result.deletedCount} expired tokens deleted from the database`
+            })
+        }
+    }
+    catch (err) {
+        res.status(500).json({
             error: err.message
         })
     }
