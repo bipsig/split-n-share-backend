@@ -19,3 +19,20 @@ export const getUserDetails = async (req, res) => {
         })
     }
 }
+
+/* GET ALL USERS (DEVELOPER PRIVILEGES) */
+export const getAllUsers = async (req, res) => {
+    console.log ('Getting all registered users');
+    try {
+        const users = await User.find({});
+        // console.log (users);
+        res.status(200).json({
+            users
+        });
+    }
+    catch (err) {
+        res.status(500).json({
+            error: err.message
+        })
+    }
+}

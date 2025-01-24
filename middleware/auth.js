@@ -39,3 +39,16 @@ export const validateToken = async (req, res, next) => {
         })
     }
 };
+
+export const validateDeveloper = (req, res, next) => {
+    const apiKey = req.header('x-api-key');
+    // console.log (apiKey);
+
+    if (!apiKey || apiKey !== process.env.DEVELOPER_API_KEY) {
+        return res.status(403).json({
+            message: 'Access Forbidden! Invalid or Missing API Key'
+        })
+    }
+
+    next();
+}
