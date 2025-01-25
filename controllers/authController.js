@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken"
 import User from "../models/User.js";
 import Blacklist from "../models/Blacklist.js";
+import { blacklistToken } from "../utils/auth/blacklistToken.js"
 
 /* REGISTERING A USER */
 export const register = async (req, res) => {
@@ -103,16 +104,18 @@ export const logout = async (req, res) => {
             })
         }
 
-        const decodedToken = jwt.decode(token);
-        // console.log (decodedToken);
-        const expiresAt = new Date(decodedToken.exp * 1000)
+        // const decodedToken = jwt.decode(token);
+        // // console.log (decodedToken);
+        // const expiresAt = new Date(decodedToken.exp * 1000)
     
-        const blacklistedToken = new Blacklist ({
-            token: token,
-            expiresAt: expiresAt
-        });
-        // console.log (blacklistedToken);
-        await blacklistedToken.save();
+        // const blacklistedToken = new Blacklist ({
+        //     token: token,
+        //     expiresAt: expiresAt
+        // });
+        // // console.log (blacklistedToken);
+        // await blacklistedToken.save();
+
+        blacklistToken(token);
 
         res.status(201).json({
             message: "User logged out successfully!"
