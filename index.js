@@ -3,9 +3,9 @@ import dotenv from "dotenv";
 import morgan from "morgan";
 import mongoose from "mongoose";
 import User from "./models/User.js";
-import authRoutes from './routes/auth.js'
-import userRoutes from './routes/user.js'
-import { validateToken } from "./middleware/auth.js";
+import authRoutes from './routes/authRoutes.js'
+import userRoutes from './routes/userRoutes.js'
+import { validateToken } from "./middleware/authMiddleware.js";
 
 dotenv.config();
 

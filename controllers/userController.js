@@ -9,12 +9,12 @@ export const getUserDetails = async (req, res) => {
             username: req.user.username
         });
         // console.log (user);
-        res.status(200).json({
+        return res.status(200).json({
             ...user._doc
         });
     }
     catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             error: err.message
         })
     }
@@ -26,12 +26,12 @@ export const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({});
         // console.log (users);
-        res.status(200).json({
+        return res.status(200).json({
             users
         });
     }
     catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             error: err.message
         })
     }

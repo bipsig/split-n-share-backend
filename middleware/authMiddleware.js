@@ -18,7 +18,7 @@ export const validateToken = async (req, res, next) => {
         const result = await Blacklist.find({ token: token });
         // console.log ('Result = ', result, result.length);
         if (result.length > 0) {
-            res.status(403).json({
+            return res.status(403).json({
                 message: 'Blacklisted Token'
             })
         }
@@ -34,7 +34,7 @@ export const validateToken = async (req, res, next) => {
         })
     }
     catch (err) {
-        res.status(500).json({
+        return res.status(500).json({
             error: err.message
         })
     }
