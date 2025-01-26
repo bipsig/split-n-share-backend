@@ -92,6 +92,29 @@ export const updateDetails = async (req, res) => {
     }
 }
 
+/* CHECK WHETHER AN EMAIL IS AVAILABLE OR NOT */
+export const isEmailUnique = async (req, res) => {
+    console.log ('Checking whether email is unique or not');
+    try {
+        // console.log (req.query.email);
+        if (await checkEmailExists(req.query.email)) {
+            return res.status(200).json({
+                message: 'Email is already in use!'
+            });
+        }
+        else {
+            return res.status(200).json({
+                message: 'Email is not taken and is available for use!'
+            });
+        }
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        });
+    }
+}
+
 /* RETRIEVE ACCESS TOKEN DETAILS */
 export const getAccessToken = async (req, res) => {
     console.log ("Getting Access Token Details");
