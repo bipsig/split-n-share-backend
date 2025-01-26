@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken"
+import bcrypt from "bcrypt";
 import { blacklistToken } from "../utils/auth/blacklistToken.js";
 import { checkEmailExists } from "../utils/user/checkEmailExists.js";
 import { checkMobileExists } from "../utils/user/checkMobileExists.js";
@@ -107,6 +108,45 @@ export const isEmailUnique = async (req, res) => {
                 message: 'Email is not taken and is available for use!'
             });
         }
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        });
+    }
+}
+
+/* UPDATE PASSWORD OF LOGGED IN USER */
+export const updatePassword = async (req, res) => {
+    console.log (`Updating password of user '${req.user.username}'`);
+    try {
+        // console.log (req.body);
+        if (req.body.oldPassword === req.body.newPassword) {
+            return res.status(400).json({
+                message: "Current Passoword and New Password cannot be same!"
+            });
+        }
+        const user = await User.findOne ({ username: req.user.username});
+
+        const oldPassword = req.body.oldPassword;
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({
+                message: "Invalid Current Password!"
+            });
+        }
+
+        const newPassword = req.body.newPassword;
+        const genPassword = await bcrypt.hash (newPassword, parseInt(process.env.SALT_ROUNDS));
+
+        user.password = genPassword;
+
+        req.body.oldPassword = undefined;
+        req.body.newPassword = undefined;
+
+        await user.save();
+        return res.status(200).json(user);
     }
     catch (err) {
         return res.status(500).json({
