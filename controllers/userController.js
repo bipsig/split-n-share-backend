@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import { blacklistToken } from "../utils/auth/blacklistToken.js";
 import { checkEmailExists } from "../utils/user/checkEmailExists.js";
 import { checkMobileExists } from "../utils/user/checkMobileExists.js";
+import { deleteUserWithUsername } from "../utils/user/deleteUserWithUsername.js"
 
 /* GETTING LOGGED IN USER DETAILS */
 export const getUserDetails = async (req, res) => {
@@ -147,6 +148,27 @@ export const updatePassword = async (req, res) => {
 
         await user.save();
         return res.status(200).json(user);
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        });
+    }
+}
+
+/* DELETE LOGGED IN USER */
+export const deleteUser = async (req, res) => {
+    console.log (`Deleting user with username ${req.user.username}`);
+    try {
+        await deleteUserWithUsername (req.user.username)
+        
+        const authHeader = req.headers["authorization"];
+        const oldAccessToken = authHeader && authHeader.split (' ')[1];
+        await blacklistToken (oldAccessToken);
+        
+        return res.status(200).json({
+            message: "User successfully deleted!"
+        })
     }
     catch (err) {
         return res.status(500).json({
