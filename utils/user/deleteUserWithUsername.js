@@ -7,6 +7,11 @@ export const deleteUserWithUsername = async (username) => {
             username: username
         });
 
+        if (!user) {
+            console.error('User not found!');
+            throw new Error('User not found!');
+        }
+
         // console.log (user);
         // console.log (parseFloat(user.totalBalance));
         // console.log (typeof(parseFloat(user.totalBalance)));
