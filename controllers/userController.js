@@ -85,6 +85,40 @@ export const isEmailUnique = async (req, res) => {
     }
 }
 
+/* SEARCH FOR USERS BASED ON QUERY (username or email) */
+export const searchUser  =async (req, res) => {
+    console.log ('Searching for users...');
+    try {
+        const query = req.query.query;
+        // console.log (query);
+
+        if (!query || query.trim() == '') {
+            return res.status(400).json({
+                message: 'Query cannot be empty'
+            });
+        }
+
+        const users = await User.find({
+            $or: [
+                { username: { $regex: query, $options: "i"}},
+                { email: { $regex: query, $options: "i" }},
+                { mobileNumber: { $regex: query, $options: "i" }}
+            ]
+        }).select('firstName lastName username email mobileNumber');
+
+        // console.log (users);
+        return res.status(200).json({
+            count: users.length,
+            users: users
+        });
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        });
+    }
+}
+
 /* UPDATE PASSWORD OF LOGGED IN USER */
 export const updatePassword = async (req, res) => {
     console.log (`Updating password of user '${req.user.username}'`);
