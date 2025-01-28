@@ -26,10 +26,16 @@ const groupSchema = new mongoose.Schema(
             default: true
         },
         members: [
-            { 
-                type: mongoose.Schema.Types.ObjectId, 
-                ref: 'User',
-                required: true 
+            {
+                user: {
+                    type: mongoose.Schema.Types.ObjectId, 
+                    ref: 'User',
+                    required: true 
+                },
+                joinedAt: {
+                    type: Date,
+                    default: Date.now()
+                }
             }
         ],
         
