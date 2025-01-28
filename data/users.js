@@ -1,4 +1,4 @@
-users = [
+const users = [
     {
       firstName: "Sagnik",
       lastName: "Das",
@@ -89,3 +89,5 @@ users = [
       gender: "Female",
     }
   ]
+
+  export default users;

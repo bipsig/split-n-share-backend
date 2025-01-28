@@ -5,7 +5,9 @@ import mongoose from "mongoose";
 import User from "./models/User.js";
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
+import groupRoutes from './routes/groupRoutes.js'
 import { validateToken } from "./middleware/authMiddleware.js";
+import users from "./data/users.js";
 
 dotenv.config();
 
@@ -33,10 +35,17 @@ connectMongoDB();
 
 app.get("/", async (req, res) => {
     try {
-        mongoose.set('autoIndex', true);
-        const result = await User.syncIndexes();
+        // mongoose.set('autoIndex', true);
+        // const result = await User.syncIndexes();
 
-        res.send("Indexes synced!" + result);
+        // res.send("Indexes synced!" + result);
+
+        const userData = users;
+
+        await User.insertMany(userData);
+        console.log('User data imported successfully!');
+
+        res.status(201).json({ message: 'User data imported successfully!'})
     } catch (error) {
         console.error("Error saving user:", error);
         res.status(500).send("Error creating user");
@@ -46,6 +55,7 @@ app.get("/", async (req, res) => {
 
 app.use ('/auth', authRoutes);
 app.use ('/user', userRoutes);
+app.use ('/group', groupRoutes);
 
 app.listen(port, () => {
     console.log(`Server running successfully on port number ${port}`);

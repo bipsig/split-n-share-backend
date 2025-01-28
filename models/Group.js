@@ -32,18 +32,44 @@ const groupSchema = new mongoose.Schema(
                     ref: 'User',
                     required: true 
                 },
+                role: {
+                    type: String,
+                    enum: ['Admin', 'Member'],
+                    default: member
+                },
                 joinedAt: {
                     type: Date,
                     default: Date.now()
+                },
+                status: {
+                    type: String,
+                    enum: ['active', 'pending', 'left'],
+                    default: 'active'
                 }
-            }
+            },
         ],
-        
+        currency: {
+            type: String,
+            default: 'INR',
+            required: true
+        },
+        totalBalance: {
+            type: Number,
+            default: 0,
+        },
+        category: {
+            type: String,
+            enum: ['Home', 'Trip', 'Office', 'Friends', 'Other'],
+            default: 'Other'
+        }      
     },
     {
         timestamps: true
     }
 );
+
+groupSchema.index({ createdBy: 1 });
+groupSchema.index({ 'members.user': 1 });
 
 const Group = mongoose.model('Group', groupSchema);
 

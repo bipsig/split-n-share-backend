@@ -65,14 +65,16 @@
             groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
             transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],
             totalBalance: {
-                type: mongoose.Schema.Types.Decimal128,
-                default: 0.0
+                type: Number,
+                default: 0
             },
         },
         { 
             timestamps: true 
         }
     );
+
+    userSchema.index({ groups: 1 });
 
     const User = mongoose.model ('User', userSchema);
 
