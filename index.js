@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import mongoose from "mongoose";
+import axios from "axios";
 import User from "./models/User.js";
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
@@ -42,7 +43,14 @@ app.get("/", async (req, res) => {
 
         const userData = users;
 
-        await User.insertMany(userData);
+        // await User.deleteMany();
+
+        for (let user of userData) {
+            // console.log (user);
+            const result = await axios.post ('http://localhost:3000/auth/register', user);
+        }
+
+        // await User.insertMany(userData);
         console.log('User data imported successfully!');
 
         res.status(201).json({ message: 'User data imported successfully!'})
