@@ -1,5 +1,6 @@
 import Group from "../models/Group.js";
 import User from "../models/User.js";
+import { fetchGroupsByUsername } from "../utils/group/fetchGroupsByUsername.js";
 
 export const createGroup = async (req, res) => {
     console.log (`Creation of group being performed by user ${req.user.username}`);
@@ -41,6 +42,23 @@ export const createGroup = async (req, res) => {
             message: "New Group created successfully",
             savedGroup
         })
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        })
+    }
+}
+
+export const fetchGroups = async (req, res) => {
+    console.log (`Fetching the groups the user '${req.user.username} belongs to...`);
+    try {
+        const groups = await fetchGroupsByUsername(req.user.username);
+        // console.log(groups);
+
+        res.status(200).json({
+            groups
+        });
     }
     catch (err) {
         return res.status(500).json({

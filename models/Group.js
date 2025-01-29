@@ -62,7 +62,8 @@ const groupSchema = new mongoose.Schema(
             type: String,
             enum: ['Home', 'Trip', 'Office', 'Friends', 'Other'],
             default: 'Other'
-        }      
+        },
+        transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}]      
     },
     {
         timestamps: true

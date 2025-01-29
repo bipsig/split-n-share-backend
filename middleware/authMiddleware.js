@@ -3,9 +3,9 @@ import Blacklist from "../models/Blacklist.js";
 
 export const validateToken = async (req, res, next) => {
     try {
-        console.log (req.headers);
+        // console.log (req.headers);
         const authHeader = req.headers["authorization"];
-        console.log (authHeader);
+        // console.log (authHeader);
     
         const token = authHeader && authHeader.split (' ')[1];
     
