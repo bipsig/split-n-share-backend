@@ -27,6 +27,7 @@ const groupSchema = new mongoose.Schema(
         },
         members: [
             {
+                _id: false,
                 user: {
                     type: mongoose.Schema.Types.ObjectId, 
                     ref: 'User',
@@ -35,7 +36,7 @@ const groupSchema = new mongoose.Schema(
                 role: {
                     type: String,
                     enum: ['Admin', 'Member'],
-                    default: member
+                    default: 'Member'
                 },
                 joinedAt: {
                     type: Date,
