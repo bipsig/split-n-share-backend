@@ -1,5 +1,6 @@
 import Group from "../models/Group.js";
 import User from "../models/User.js";
+import { fetchGroupDetailsById } from "../utils/group/fetchGroupDetailsById.js";
 import { fetchGroupsByUsername } from "../utils/group/fetchGroupsByUsername.js";
 
 export const createGroup = async (req, res) => {
@@ -59,6 +60,43 @@ export const fetchGroups = async (req, res) => {
         res.status(200).json({
             groups
         });
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        })
+    }
+}
+
+export const fetchGroupDetails = async (req, res) => {
+    console.log ('Fetching particular group details');
+    try {
+        const { groupId } = req.params;
+        // console.log (groupId);
+
+        const { username } = req.user;
+        // console.log (username);
+
+        const result = await User.find({
+            username,
+            groups: groupId
+        });
+        // console.log (result);
+
+        if (result.length === 0) {
+            return res.status(403).json({
+                message: 'Access Denied! You are not a member of the group!'
+            });
+        }
+
+        const group = await fetchGroupDetailsById (groupId);
+
+        // console.log (group);
+
+        return res.status(200).json({
+            message: "Group fetched successfully",
+            group
+        })
     }
     catch (err) {
         return res.status(500).json({
