@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken"
 import User from "../models/User.js";
 import Blacklist from "../models/Blacklist.js";
 import { blacklistToken } from "../utils/auth/blacklistToken.js"
+import { createToken } from "../utils/createToken.js";
 
 /* REGISTERING A USER */
 export const register = async (req, res) => {
@@ -52,19 +53,9 @@ export const login = async (req, res) => {
             }); 
         }
 
-        const payload = {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            username: user.username,
-            loginTime: new Date().toUTCString()
-        };
-        console.log (payload);
-
+        const accessToken = createToken (user);
+        
         user.password = undefined;
-
-        const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_TIMEOUT
-        });
 
         return res.status(200).json({
             accessToken: accessToken

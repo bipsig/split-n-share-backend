@@ -5,6 +5,7 @@ import { checkEmailExists } from "../utils/user/checkEmailExists.js";
 import { deleteUserWithUsername } from "../utils/user/deleteUserWithUsername.js"
 import { updateUserWithUsername } from "../utils/user/updateUserWithUsername.js";
 import { updatePasswordWithUsername } from "../utils/user/updatePasswordWithUsername.js";
+import { createToken } from "../utils/createToken.js";
 
 /* GETTING LOGGED IN USER DETAILS */
 export const getUserDetails = async (req, res) => {
@@ -33,19 +34,8 @@ export const updateDetails = async (req, res) => {
         const user = await updateUserWithUsername (req.body, req.user.username);
         await user.save();
 
-        
-        const newPayload = {
-            firstName: user.firstName,
-            lastName: user.lastName,
-            username: user.username,
-            loginTime: new Date().toUTCString()
-        };
-        console.log (newPayload);
-        
-        const newAccessToken = jwt.sign(newPayload, process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_TIMEOUT
-        });
-        
+        const newAccessToken = createToken (user);
+
         const authHeader = req.headers["authorization"];
         const oldAccessToken = authHeader && authHeader.split (' ')[1];
         await blacklistToken (oldAccessToken);
