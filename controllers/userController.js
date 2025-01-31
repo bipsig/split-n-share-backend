@@ -51,8 +51,8 @@ export const updateDetails = async (req, res) => {
         await blacklistToken (oldAccessToken);
         
         return res.status(201).json({
-            userDetails: user,
-            accessToken: newAccessToken
+            accessToken: newAccessToken,
+            userDetails: user
         });
     }
     catch (err) {

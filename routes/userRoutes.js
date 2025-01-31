@@ -4,13 +4,16 @@ import { deleteUser, getAccessToken, getAllUsers, getUserDetails, isEmailUnique,
 
 const router = express.Router();
 
-router.get ('/', validateToken, getUserDetails);
-router.put ('/', validateToken, updateDetails);
-router.delete ('/', validateToken, deleteUser);
-router.get ('/accessToken', validateToken, getAccessToken);
-router.get ('/check-email', isEmailUnique);
+router.get ('/me', validateToken, getUserDetails);
+router.patch ('/me', validateToken, updateDetails);
+router.patch ('/me/password', validateToken, updatePassword)
+router.delete ('/me', validateToken, deleteUser);
+
+router.get ('/token', validateToken, getAccessToken);
+
+router.get ('/is-email-unique', isEmailUnique);
 router.get ('/search', searchUser);
-router.patch ('/change-password', validateToken, updatePassword)
+
 router.get ('/all', validateDeveloper, getAllUsers);
 
 export default router;

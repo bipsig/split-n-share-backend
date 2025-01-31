@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post ('/register', register);
 router.post ('/login', login);
-router.post ('/logout', logout);
+router.delete ('/logout', logout);
 router.delete ('/cleanup', validateDeveloper, cleanup)
 
 export default router;

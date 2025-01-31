@@ -61,9 +61,9 @@ app.get("/", async (req, res) => {
 });
 
 
-app.use ('/auth', authRoutes);
-app.use ('/user', userRoutes);
-app.use ('/group', groupRoutes);
+app.use ('/api/v1/auth', authRoutes);
+app.use ('/api/v1/users', userRoutes);
+app.use ('/api/v1/groups', groupRoutes);
 
 app.listen(port, () => {
     console.log(`Server running successfully on port number ${port}`);
