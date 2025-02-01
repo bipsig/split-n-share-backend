@@ -7,6 +7,7 @@ export const createToken = (user) => {
         }
 
         const payload = {
+            userId: user._id,
             firstName: user.firstName,
             lastName: user.lastName,
             username: user.username,
