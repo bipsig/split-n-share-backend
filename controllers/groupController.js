@@ -6,6 +6,7 @@ import { fetchGroupsByUsername } from "../utils/group/fetchGroupsByUsername.js";
 import { fetchUserRole } from "../utils/group/fetchUserRole.js";
 import { userInGroup } from "../utils/group/userInGroup.js";
 import { addMemberToGroup } from "../utils/group/addMemberToGroup.js";
+import { removeMemberFromGroup } from "../utils/group/removeMemberFromGroup.js";
 
 /* CREATING A NEW GROUP BY LOGGED IN USER */
 export const createGroup = async (req, res) => {
@@ -159,6 +160,63 @@ export const addMembersToGroup = async (req, res) => {
         });
         // console.log (addedMembers);
         // console.log (failedMembers);
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        })
+    }
+}
+
+/* REMOVING MEMBERS FROM A GROUP */
+export const removeMembersFromGroup = async (req, res) => {
+    console.log ('Removing members from a group');
+    try {
+        /* 
+        1. CHECK WHETHER USER BELONGS TO THE GROUP
+        2. CHECK WHETHER USER IS AN ADMIN IN AN GROUP
+        3. REMOVE THE MEMBERS FROM THE members ARRAY OF THE GROUP
+        4. REMOVE THE groupId FROM THE groups ARRAY OF EVERY USER INDIVIDUALLY
+        */
+
+        const{ groupId } = req.params;
+        const { userId, username } = req.user;
+        const { removeMembers } = req.body;
+
+        const group = await fetchGroupDetailsById (groupId);
+           
+        if (!userInGroup (userId, group)) {
+            return res.status(403).json({
+               message: 'Access Denied! You are not a member of the group!'
+            });
+        }
+            
+        if (fetchUserRole (userId, group.members) !== 'Admin') {
+            return res.status(403).json({
+                message: 'Access Denied! You are not an admin of the group!'
+            });
+        }
+
+        const responses = [];
+        for (let userId of removeMembers) {
+            const response = await removeMemberFromGroup(userId, group);
+            responses.push({
+                userId: userId,
+                ...response
+            });
+        }
+
+        // console.log (responses);
+        const removedMembers = responses.filter((response) => response.success).map((response) => response.userId);
+        const failedMembers = responses.filter((response) => !response.success);
+        await group.save();
+
+        return res.status(201).json({
+            message: 'Members removed successfully!',
+            removedMembers,
+            failedMembers
+        });
+
     }
     catch (err) {
         return res.status(500).json({
