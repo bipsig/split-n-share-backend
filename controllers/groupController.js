@@ -86,6 +86,11 @@ export const fetchGroupDetails = async (req, res) => {
         // console.log (username);
         
         const group = await fetchGroupDetailsById (groupId);
+        if (!group) {
+            return res.status(404).json({
+                message: 'Group not found'
+            });
+        }
 
         if (!userInGroup (userId, group)) {
             return res.status(403).json({
@@ -124,6 +129,12 @@ export const addMembersToGroup = async (req, res) => {
         */
            
         const group = await fetchGroupDetailsById (groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Group not found'
+            });
+        }
            
         if (!userInGroup (userId, group)) {
             return res.status(403).json({
@@ -184,6 +195,12 @@ export const removeMembersFromGroup = async (req, res) => {
         const { removeMembers } = req.body;
 
         const group = await fetchGroupDetailsById (groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Group not found'
+            });
+        }
            
         if (!userInGroup (userId, group)) {
             return res.status(403).json({
@@ -229,20 +246,6 @@ export const removeMembersFromGroup = async (req, res) => {
 export const deleteGroup = async (req, res) => {
     console.log ("Deleting group");
     try {
-        // const { groupId } = req.params;
-        // // console.log (groupId);
-
-        // const { username } = req.user;
-
-        // if (userInGroup (username, groupId)) {
-        //     return res.status(403).json({
-        //         message: 'Access Denied! You are not a member of the group!'
-        //     });
-        // }
-
-        // const group = await fetchGroupDetailsById (groupId);
-        // console.log (group);
-
         /* CHECK IF USER IS AN ADMIN */
 
         /* CHECK IF THE GROUP IS SETTLED */
@@ -254,6 +257,51 @@ export const deleteGroup = async (req, res) => {
         PROCESS CAN BE REMOVE EVERY MEMBER FROM THE GROUP (actual implementation ie call the function to do so)
         THEN DELETE THE GROUP 
         */
+
+
+        const { groupId } = req.params;
+        // console.log (groupId);
+
+        const { userId, username } = req.user;
+
+        const group = await fetchGroupDetailsById (groupId);
+
+        if (!group) {
+            return res.status(404).json({
+                message: 'Group not found'
+            });
+        }
+           
+        if (!userInGroup (userId, group)) {
+            return res.status(403).json({
+               message: 'Access Denied! You are not a member of the group!'
+            });
+        }
+            
+        if (fetchUserRole (userId, group.members) !== 'Admin') {
+            return res.status(403).json({
+                message: 'Access Denied! You are not an admin of the group!'
+            });
+        }
+
+        if (group.totalBalance !== 0) {
+            return res.status(404).json({
+                message: 'Group balances is not settled. Unable to delte group'
+            });
+        }
+
+        for (let member of group.members) {
+            await User.findByIdAndUpdate(member.user, {
+                $pull: { groups: group._id }
+            });
+        }
+
+        await Group.findByIdAndDelete(groupId);
+
+        return res.status(200).json({
+            message: 'Group deleted successfully'
+        });
+
     }
     catch (err) {
         return res.status(500).json({
