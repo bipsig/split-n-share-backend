@@ -62,8 +62,32 @@
                 },
                 required: [true, 'Gender is required']
             },
-            groups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }],
-            transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}],
+            groups: [
+                { 
+                    _id: false,
+                    group: {
+                        type: mongoose.Schema.Types.ObjectId, ref: 'Group',
+                        required: true 
+                    },
+                    groupSlug: {
+                        type: String,
+                        required: true
+                    }
+                }
+            ],
+            transactions: [
+                { 
+                    _id: false,
+                    transaction: {
+                        type: mongoose.Schema.Types.ObjectId, ref: 'Transaction',
+                        required: true
+                    },
+                    transactionSlug: {
+                        type: String,
+                        required: true
+                    } 
+                }
+            ],
             totalBalance: {
                 type: Number,
                 default: 0

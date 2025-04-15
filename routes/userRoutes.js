@@ -1,6 +1,6 @@
 import express from "express";
 import { validateDeveloper, validateToken } from "../middleware/authMiddleware.js";
-import { deleteUser, getAccessToken, getAllUsers, getUserDetails, isEmailUnique, searchUser, updateDetails, updatePassword } from "../controllers/userController.js";
+import { deleteAllUsers, deleteUser, getAccessToken, getAllUsers, getUserDetails, isEmailUnique, searchUser, updateDetails, updatePassword } from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -15,5 +15,7 @@ router.get ('/is-email-unique', isEmailUnique);
 router.get ('/search', searchUser);
 
 router.get ('/all', validateDeveloper, getAllUsers);
+
+router.delete('/all', validateDeveloper, deleteAllUsers);
 
 export default router;

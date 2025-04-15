@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import User from "../../models/User.js";
+import { fetchUsernameWithUserId } from "../user/fetchUsernameWithUserId.js";
 
 export const addMemberToGroup = async (userId, group) => {
     try {
@@ -18,16 +19,31 @@ export const addMemberToGroup = async (userId, group) => {
             }
         }
 
+        const username = await fetchUsernameWithUserId (userId);
+        if (!username) {
+            return { 
+                success: false,
+                message: `User ${userId} doesn't exist in the database`
+            }
+        }
+
         group.members.push({
             user: userId,
+            username: username,
             role: 'Member',
             joinedAt: Date.now(),
             status: 'active'
         });
 
+        console.log (group._id + ": " + group.slug);
         await User.findByIdAndUpdate(userId, {
-            $addToSet: { groups: group._id}
-        })
+            $addToSet: {
+                groups: {
+                    group: group._id,
+                    groupSlug: group.slug
+                }
+            }
+        });        
 
         return { 
             success: true,

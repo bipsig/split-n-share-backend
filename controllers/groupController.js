@@ -7,6 +7,7 @@ import { fetchUserRole } from "../utils/group/fetchUserRole.js";
 import { userInGroup } from "../utils/group/userInGroup.js";
 import { addMemberToGroup } from "../utils/group/addMemberToGroup.js";
 import { removeMemberFromGroup } from "../utils/group/removeMemberFromGroup.js";
+import { generateGroupSlug } from "../utils/group/generateGroupSlug.js";
 
 /* CREATING A NEW GROUP BY LOGGED IN USER */
 export const createGroup = async (req, res) => {
@@ -15,24 +16,32 @@ export const createGroup = async (req, res) => {
         // console.log (req.body);
         const { name, description, currency, category } = req.body;
 
+        // Validation Check if name is missing from the body
         if (!name) {
             return res.status(400).json({
                 message: 'Group name is required'
             });
         }
 
+        // Find the current user model from the database (logged in user)
         const currentUser = await User.findOne ({
             username: req.user.username
         });
 
+        const slug = generateGroupSlug(name);
+
+
+        // Creation of Group Model
         const group = new Group ({
             name,
+            slug,
             description,
             currency: currency || 'INR',
             category: category|| 'Other',
             createdBy: currentUser._id,
             members: [{
                 user: currentUser._id,
+                username: currentUser.username,
                 role: 'Admin',
                 joinedAt: Date.now()
             }]
@@ -40,10 +49,14 @@ export const createGroup = async (req, res) => {
 
         // console.log (group);
         const savedGroup = await group.save();
-
-        currentUser.groups.push(savedGroup._id);
-
+        
+        // Pushing the group ID to the groups array of the current user
+        currentUser.groups.push({
+            group: savedGroup._id,
+            groupSlug: savedGroup.slug
+        });
         await currentUser.save();
+
 
         return res.status(201).json({
             message: "New Group created successfully",
@@ -292,9 +305,9 @@ export const deleteGroup = async (req, res) => {
 
         for (let member of group.members) {
             await User.findByIdAndUpdate(member.user, {
-                $pull: { groups: group._id }
+                $pull: { groups: { group: group._id } }
             });
-        }
+        }        
 
         await Group.findByIdAndDelete(groupId);
 
@@ -309,3 +322,18 @@ export const deleteGroup = async (req, res) => {
         })
     }
 }
+
+export const deleteAllGroups = async (req, res) => {
+    try {
+        // console.log ("Deleting all groups");
+        const result = await Group.deleteMany({});
+        console.log(`${result.deletedCount} group(s) deleted.`);
+        res.status(200).json({
+            message: `${result.deletedCount} group(s) deleted successfully.`
+        });
+    } 
+    catch (err) {
+        console.error('Error deleting groups:', err);
+        res.status(500).json({ message: 'Error deleting groups', error: err.message });
+    }
+};

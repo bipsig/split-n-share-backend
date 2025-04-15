@@ -34,8 +34,9 @@ const connectMongoDB = async () => {
 
 connectMongoDB();
 
-app.get("/", async (req, res) => {
+app.get(`/api/${process.env.VERSION}`, async (req, res) => {
     try {
+        // console.log ("HERE");
         // mongoose.set('autoIndex', true);
         // const result = await User.syncIndexes();
 
@@ -43,11 +44,11 @@ app.get("/", async (req, res) => {
 
         const userData = users;
 
-        // await User.deleteMany();
+        await User.deleteMany();
 
         for (let user of userData) {
             // console.log (user);
-            const result = await axios.post ('http://localhost:3000/auth/register', user);
+            const result = await axios.post (`${process.env.BASE_URL}${process.env.VERSION}auth/register`, user);
         }
 
         // await User.insertMany(userData);
@@ -55,7 +56,7 @@ app.get("/", async (req, res) => {
 
         res.status(201).json({ message: 'User data imported successfully!'})
     } catch (error) {
-        console.error("Error saving user:", error);
+        // console.error("Error saving user:", error);
         res.status(500).send("Error creating user");
     }
 });

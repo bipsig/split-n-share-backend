@@ -180,3 +180,17 @@ export const getAllUsers = async (req, res) => {
         })
     }
 }
+
+export const deleteAllUsers = async (req, res) => {
+    try {
+        // console.log("Deleting all users");
+        const result = await User.deleteMany({});
+        console.log(`${result.deletedCount} user(s) deleted.`);
+        res.status(200).json({
+            message: `${result.deletedCount} user(s) deleted successfully.`
+        });
+    } 
+    catch (err) {
+        console.error('Error deleting users:', err);
+    }
+};

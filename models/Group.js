@@ -8,6 +8,13 @@ const groupSchema = new mongoose.Schema(
             minlength: [3, 'Group name should have atlease 3 characters'],
             maxlength: [50, 'Group name should have less than 50 characters']
         },
+        slug: {
+            type: String,
+            required: true,
+            unique: true,
+            lowercase: true,
+            trim: true
+        },
         description: {
             type: String,
             default: ''
@@ -32,6 +39,10 @@ const groupSchema = new mongoose.Schema(
                     type: mongoose.Schema.Types.ObjectId, 
                     ref: 'User',
                     required: true 
+                },
+                username: {
+                    type: String,
+                    required: true
                 },
                 role: {
                     type: String,
@@ -63,7 +74,19 @@ const groupSchema = new mongoose.Schema(
             enum: ['Home', 'Trip', 'Office', 'Friends', 'Other'],
             default: 'Other'
         },
-        transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Transaction'}]      
+        transactions: [
+            { 
+                transaction: {
+                    type: mongoose.Schema.Types.ObjectId, 
+                    ref: 'Transaction',
+                    required: true
+                },
+                transactionSlug: {
+                    type: String,
+                    required: true
+                }
+            }
+        ]      
     },
     {
         timestamps: true

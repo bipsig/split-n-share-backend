@@ -22,8 +22,9 @@ export const removeMemberFromGroup = async (userId, group) => {
         group.members.splice (index, 1);
 
         await User.findByIdAndUpdate(userId, {
-            $pull: { groups: group._id }
+            $pull: { groups: { group: group._id } }
         });
+        
 
         return {
             success: true,
