@@ -145,3 +145,35 @@ export const createTransaction = async (req, res) => {
         })
     }
 }
+
+/* FETCHING ALL TRANSACTIONS OF A PARTICULAR GROUP */
+export const fetchTransactionsOfAGroup = async (req, res) => {
+    console.log (`Fetching details of group with groupId ${req.params.groupId}`);
+    try {
+        const { groupId } = req.params;
+
+        /*
+            1. Check if group exists or not.
+            2. Check if the logged in user is a member of the group or not
+        */
+
+        const group = await fetchGroupDetailsById(groupId);
+        // console.log (group);
+
+        if (!userInGroup(req.user.userId, group)) {
+            return res.status(404).json({
+                message: `Logged in user doesn't belong to this particular group`
+            });
+        }
+
+        const transactions = group.transactions;
+        res.status(200).json({
+            transactions
+        })
+    }
+    catch(err) {
+        return res.status(500).json({
+            error: err.message
+        })
+    }
+}
