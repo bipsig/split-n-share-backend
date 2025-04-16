@@ -6,6 +6,7 @@ import { userInGroup } from "../utils/group/userInGroup.js";
 import { generateTransactionSlug } from "../utils/transaction/generateTransactionSlug.js";
 import { fetchUsernameWithUserId } from "../utils/user/fetchUsernameWithUserId.js";
 import User from "../models/User.js";
+import { fetchTransactionDetailsById } from "../utils/transaction/fetchTransactionDetailsById.js";
 
 /* CREATING A NEW TRANSACTION BY LOGGED IN USER */
 export const createTransaction = async (req, res) => {
@@ -172,6 +173,49 @@ export const fetchTransactionsOfAGroup = async (req, res) => {
         })
     }
     catch(err) {
+        return res.status(500).json({
+            error: err.message
+        })
+    }
+}
+
+/* FETCHING DETAILS OF A PARTICULAR TRANSACTION */
+export const fetchTransactionDetails = async (req, res) => {
+    console.log (`Fetching details of a particular transaction`);
+    try {
+        const { transactionId } = req.params;
+        // console.log (transactionId);
+
+        const { userId } = req.body;
+
+        const transaction = await fetchTransactionDetailsById (transactionId);
+        // console.log (transaction);
+        if (!transaction) {
+            return res.status(404).json({
+                message: 'Transaction not found'
+            });
+        }
+
+        const group = await fetchGroupDetailsById (transaction.groupId);
+        if (!group) {
+            return res.status(404).json({
+                message: 'Group not found'
+            });
+        }
+        // console.log (group);
+
+        if (!userInGroup(req.user.userId, group)) {
+            return res.status(404).json({
+                message: `Logged in user doesn't belong to the group the transaction is part of. ACCESS DENIED`
+            });
+        }
+
+        res.status(200).json({
+            message: "Transaction details fetched successfully",
+            transaction
+        })
+    }
+    catch (err) {
         return res.status(500).json({
             error: err.message
         })
