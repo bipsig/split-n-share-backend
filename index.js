@@ -7,6 +7,7 @@ import User from "./models/User.js";
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import groupRoutes from './routes/groupRoutes.js'
+import transactionRoutes from './routes/transactionRoutes.js'
 import { validateToken } from "./middleware/authMiddleware.js";
 import users from "./data/users.js";
 
@@ -34,14 +35,22 @@ const connectMongoDB = async () => {
 
 connectMongoDB();
 
+app.get(`/api/${process.env.VERSION}/sync`, async (req, res) => {
+    try {
+        console.log ("HERE");
+        mongoose.set('autoIndex', true);
+        const result = await User.syncIndexes();
+
+        res.send("Indexes synced!" + result);
+    }
+    catch (error) {
+        // console.error("Error saving user:", error);
+        res.status(500).send("Error syncing indices");
+    }
+});
+
 app.get(`/api/${process.env.VERSION}`, async (req, res) => {
     try {
-        // console.log ("HERE");
-        // mongoose.set('autoIndex', true);
-        // const result = await User.syncIndexes();
-
-        // res.send("Indexes synced!" + result);
-
         const userData = users;
 
         await User.deleteMany();
@@ -65,6 +74,7 @@ app.get(`/api/${process.env.VERSION}`, async (req, res) => {
 app.use ('/api/v1/auth', authRoutes);
 app.use ('/api/v1/users', userRoutes);
 app.use ('/api/v1/groups', groupRoutes);
+app.use ('/api/v1/transactions', transactionRoutes);
 
 app.listen(port, () => {
     console.log(`Server running successfully on port number ${port}`);

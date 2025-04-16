@@ -299,7 +299,7 @@ export const deleteGroup = async (req, res) => {
 
         if (group.totalBalance !== 0) {
             return res.status(404).json({
-                message: 'Group balances is not settled. Unable to delte group'
+                message: 'Group balances is not settled. Unable to delete group'
             });
         }
 

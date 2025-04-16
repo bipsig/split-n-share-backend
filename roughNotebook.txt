@@ -1,0 +1,44 @@
+{
+  userId: '67fecca8d62409d271e37ae3',
+  firstName: 'Sagnik',
+  lastName: 'Das',
+  username: 'sagnik',
+  loginTime: 'Wed, 16 Apr 2025 15:18:26 GMT',
+  iat: 1744816706,
+  exp: 1744859906
+}
+
+{
+  user_added: {
+    userId: new ObjectId('67fecca8d62409d271e37ae3'),
+    username: 'sagnik'
+  },
+  description: 'Initial Transaction',
+  slug: 'initialtransaction1744826472319',
+  amount: 500,
+  user_paid: {
+    userId: new ObjectId('67fecca8d62409d271e37aeb'),
+    username: 'mayank'
+  },
+  users_involved: [
+    {
+      user: new ObjectId('67fecca8d62409d271e37ae3'),
+      username: 'sagnik',
+      share: 0.5
+    },
+    {
+      user: new ObjectId('67fecca8d62409d271e37aeb'),
+      username: 'mayank',
+      share: 0.5
+    }
+  ],
+  isSettled: false,
+  groupId: new ObjectId('67feccc0d62409d271e37af8'),
+  groupSlug: 'goatrip1744751808983',
+  note: '',
+  type: 'Expense',
+  picturePath: '',
+  currency: 'INR',
+  _id: new ObjectId('67fff068e6d4e04a81d7b3c8'),
+  createdAt: 2025-04-16T18:01:12.345Z
+}
