@@ -7,6 +7,7 @@ import { generateTransactionSlug } from "../utils/transaction/generateTransactio
 import { fetchUsernameWithUserId } from "../utils/user/fetchUsernameWithUserId.js";
 import User from "../models/User.js";
 import { fetchTransactionDetailsById } from "../utils/transaction/fetchTransactionDetailsById.js";
+import { deleteTransactionFromUsers } from "../utils/transaction/deleteTransactionFromUsers.js";
 
 /* CREATING A NEW TRANSACTION BY LOGGED IN USER */
 export const createTransaction = async (req, res) => {
@@ -186,8 +187,6 @@ export const fetchTransactionDetails = async (req, res) => {
         const { transactionId } = req.params;
         // console.log (transactionId);
 
-        const { userId } = req.body;
-
         const transaction = await fetchTransactionDetailsById (transactionId);
         // console.log (transaction);
         if (!transaction) {
@@ -214,6 +213,66 @@ export const fetchTransactionDetails = async (req, res) => {
             message: "Transaction details fetched successfully",
             transaction
         })
+    }
+    catch (err) {
+        return res.status(500).json({
+            error: err.message
+        })
+    }
+}
+
+/* DELETE A PARTICULAR TRANSACTION */
+export const deleteTransaction = async (req, res) => {
+    console.log ("Deleting a particular transaction");
+    try {
+        /*
+            1. Check if transaction exists or not.
+            2. Check the group the transaction is a part of
+            3. Check if the logged in user is a member of the group or not
+            4. Loop through the array of users in the transaction and delete the particular transaction from every user.
+            5. Delete the transaction from the group document.
+            6. Delete the transaction.
+        */
+
+            const { transactionId } = req.params;
+    
+            const transaction = await fetchTransactionDetailsById (transactionId);
+
+            if (!transaction) {
+                return res.status(404).json({
+                    message: 'Transaction not found'
+                });
+            }
+    
+            const group = await fetchGroupDetailsById (transaction.groupId);
+            if (!group) {
+                return res.status(404).json({
+                    message: 'Group not found'
+                });
+            }
+    
+            if (!userInGroup(req.user.userId, group)) {
+                return res.status(404).json({
+                    message: `Logged in user doesn't belong to the group the transaction is part of. ACCESS DENIED`
+                });
+            }
+            
+            // console.log (transaction.users_involved);
+            const users = transaction.users_involved;
+            await deleteTransactionFromUsers(transactionId, users);
+
+            // console.log (group);
+            group.transactions = group.transactions.filter((t) => {
+                return t.transaction.toString() !== transactionId.toString();
+            })
+            // console.log (group);
+            await group.save();
+
+            await Transaction.findByIdAndDelete(transactionId);
+
+            return res.status(200).json({
+                message: 'Transaction deleted successfully'
+            });
     }
     catch (err) {
         return res.status(500).json({
