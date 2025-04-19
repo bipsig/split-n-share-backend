@@ -280,3 +280,18 @@ export const deleteTransaction = async (req, res) => {
         })
     }
 }
+
+export const deleteAllTransactions = async (req, res) => {
+    try {
+        // console.log ("Deleting all groups");
+        const result = await Transaction.deleteMany({});
+        console.log(`${result.deletedCount} transaction(s) deleted.`);
+        res.status(200).json({
+            message: `${result.deletedCount} transaction(s) deleted successfully.`
+        });
+    } 
+    catch (err) {
+        console.error('Error deleting transactions:', err);
+        res.status(500).json({ message: 'Error deleting transactions', error: err.message });
+    }
+};

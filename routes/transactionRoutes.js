@@ -1,8 +1,10 @@
 import express from "express";
-import { validateToken } from "../middleware/authMiddleware.js";
-import { createTransaction, deleteTransaction, fetchTransactionDetails, fetchTransactionsOfAGroup } from "../controllers/transactionController.js";
+import { validateDeveloper, validateToken } from "../middleware/authMiddleware.js";
+import { createTransaction, deleteAllTransactions, deleteTransaction, fetchTransactionDetails, fetchTransactionsOfAGroup } from "../controllers/transactionController.js";
 
 const router = express.Router();
+
+router.delete('/all', validateDeveloper, deleteAllTransactions);
 
 router.post('/', validateToken, createTransaction);
 router.get('/groups/:groupId', validateToken, fetchTransactionsOfAGroup);

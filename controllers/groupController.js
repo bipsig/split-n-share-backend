@@ -8,6 +8,9 @@ import { userInGroup } from "../utils/group/userInGroup.js";
 import { addMemberToGroup } from "../utils/group/addMemberToGroup.js";
 import { removeMemberFromGroup } from "../utils/group/removeMemberFromGroup.js";
 import { generateGroupSlug } from "../utils/group/generateGroupSlug.js";
+import { addMemberToTransactionMatrix } from "../utils/transactionMatrix/addMemberToTransactionMatrix.js";
+import { fetchUsernameWithUserId } from "../utils/user/fetchUsernameWithUserId.js";
+import { removeMemberFromTransactionMatrix } from "../utils/transactionMatrix/removeMemberFromTransactionMatrix.js";
 
 /* CREATING A NEW GROUP BY LOGGED IN USER */
 export const createGroup = async (req, res) => {
@@ -30,6 +33,26 @@ export const createGroup = async (req, res) => {
 
         const slug = generateGroupSlug(name);
 
+        const username = req.user.username;
+        const matrix = {};
+        const innerMatrix = {};
+        innerMatrix[username] = 0;
+        matrix [username] = innerMatrix;
+
+        // console.log (matrix);
+
+        const rowSum = {};
+        rowSum[username] = 0;
+
+        const colSum = {};
+        colSum[username] = 0;
+
+        const transactionMatrix = {
+            matrix,
+            rowSum, 
+            colSum
+        };
+
 
         // Creation of Group Model
         const group = new Group ({
@@ -44,7 +67,8 @@ export const createGroup = async (req, res) => {
                 username: currentUser.username,
                 role: 'Admin',
                 joinedAt: Date.now()
-            }]
+            }],
+            transactionMatrix
         });
 
         // console.log (group);
@@ -175,6 +199,17 @@ export const addMembersToGroup = async (req, res) => {
 
         const addedMembers = responses.filter((response) => response.success).map((response) => response.userId);
         const failedMembers = responses.filter((response) => !response.success);
+
+        for (let member of addedMembers) {
+            const memberUsername = await fetchUsernameWithUserId(member);
+            // console.log(memberUsername);
+            group.transactionMatrix = addMemberToTransactionMatrix(memberUsername, group.transactionMatrix);
+        }
+
+        console.log (group.transactionMatrix);
+        group.markModified('transactionMatrix.matrix');
+        group.markModified('transactionMatrix.rowSum');
+        group.markModified('transactionMatrix.colSum');
         await group.save();
 
         return res.status(201).json({
@@ -239,8 +274,19 @@ export const removeMembersFromGroup = async (req, res) => {
         // console.log (responses);
         const removedMembers = responses.filter((response) => response.success).map((response) => response.userId);
         const failedMembers = responses.filter((response) => !response.success);
-        await group.save();
 
+        for (let member of removedMembers) {
+            const memberUsername = await fetchUsernameWithUserId(member);
+            // console.log(memberUsername);
+            group.transactionMatrix = removeMemberFromTransactionMatrix(memberUsername, group.transactionMatrix);
+        }
+
+        console.log (group.transactionMatrix);
+        group.markModified('transactionMatrix.matrix');
+        group.markModified('transactionMatrix.rowSum');
+        group.markModified('transactionMatrix.colSum');
+        await group.save();
+        
         return res.status(201).json({
             message: 'Members removed successfully!',
             removedMembers,

@@ -36,9 +36,9 @@ const groupSchema = new mongoose.Schema(
             {
                 _id: false,
                 user: {
-                    type: mongoose.Schema.Types.ObjectId, 
+                    type: mongoose.Schema.Types.ObjectId,
                     ref: 'User',
-                    required: true 
+                    required: true
                 },
                 username: {
                     type: String,
@@ -75,9 +75,9 @@ const groupSchema = new mongoose.Schema(
             default: 'Other'
         },
         transactions: [
-            { 
+            {
                 transaction: {
-                    type: mongoose.Schema.Types.ObjectId, 
+                    type: mongoose.Schema.Types.ObjectId,
                     ref: 'Transaction',
                     required: true
                 },
@@ -86,7 +86,30 @@ const groupSchema = new mongoose.Schema(
                     required: true
                 }
             }
-        ]      
+        ],
+        transactionMatrix: {
+            type: new mongoose.Schema({
+                matrix: {
+                    type: Object,
+                    // of: {
+                    //     type: Map,
+                    //     of: Number
+                    // },
+                    default: {}
+                },
+                rowSum: {
+                    type: Object,
+                    // of: Number,
+                    default: {}
+                },
+                colSum: {
+                    type: Object,
+                    // of: Number,
+                    default: {}
+                }
+            }, { _id: false }),
+            default: () => ({})
+        }
     },
     {
         timestamps: true
