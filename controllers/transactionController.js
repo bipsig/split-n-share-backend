@@ -8,13 +8,15 @@ import { fetchUsernameWithUserId } from "../utils/user/fetchUsernameWithUserId.j
 import User from "../models/User.js";
 import { fetchTransactionDetailsById } from "../utils/transaction/fetchTransactionDetailsById.js";
 import { deleteTransactionFromUsers } from "../utils/transaction/deleteTransactionFromUsers.js";
+import { addTransactionToTransactionMatrix } from "../utils/transactionMatrix/addTransactionToTransactionMatrix.js";
+import { deleteTrnasactionFromTransactionMatrix } from "../utils/transactionMatrix/deleteTransactionFromTransactionMatrix.js";
 
 /* CREATING A NEW TRANSACTION BY LOGGED IN USER */
 export const createTransaction = async (req, res) => {
     console.log(`Creation of a new transaction by user ${req.user.username}`);
     try {
-        console.log(req.body);
-        console.log(req.user);
+        // console.log(req.body);
+        // console.log(req.user);
         /*
         VALDIATION CHECKS REQUIRED and FLOW OF THE CONTROLLER:
             1. Check whether logged in user belongs to the group or not.
@@ -32,7 +34,7 @@ export const createTransaction = async (req, res) => {
         */
 
 
-        const { amount, user_paid, users_involved, groupId, description } = req.body;
+        const { amount, user_paid, users_involved, groupId, description, type } = req.body;
         // console.log (req.user.userId);
         // console.log (groupId);
         
@@ -71,7 +73,7 @@ export const createTransaction = async (req, res) => {
         let totalShare = 0;
         let finalUsers = [];
         for (let user of users_involved) {
-            console.log(user);
+            // console.log(user);
             if (!userInGroup(user.user, group)) {
                 return res.status(404).json({
                     message: `User with userId ${user.user} doesn't belong to this group`
@@ -98,6 +100,7 @@ export const createTransaction = async (req, res) => {
         const slug = generateTransactionSlug(description);
         // console.log (slug);
 
+
         const transaction = new Transaction({
             user_added: { userId: req.user.userId, username: req.user.username },
             description,
@@ -106,20 +109,25 @@ export const createTransaction = async (req, res) => {
             user_paid: { userId: user_paid, username: userPaidUsername },
             users_involved: finalUsers,
             groupId,
+            type,
             groupSlug: group.slug
         });
 
         const result = await transaction.save();
-        // console.log (result);
 
-        // console.log (transaction);
+        // // console.log (transaction);
 
-        // console.log (group);
+        // // console.log (group);
         group.transactions.push({
             transaction: result._id,
             transactionSlug: slug
         });
-        // console.log (group);
+
+        // console.log ("Initial group");
+        // console.log (group.transactionMatrix);
+
+        group.transactionMatrix = addTransactionToTransactionMatrix(group.transactionMatrix, userPaidUsername, finalUsers, amount);
+        
 
         for (let user of finalUsers) {
             const currentUser = await User.findById(user.user);
@@ -133,6 +141,11 @@ export const createTransaction = async (req, res) => {
             await currentUser.save();
         }
 
+        console.log ("New group");
+        console.log (group.transactionMatrix);
+        group.markModified('transactionMatrix.matrix');
+        group.markModified('transactionMatrix.rowSum');
+        group.markModified('transactionMatrix.colSum');
         await group.save();
 
         return res.status(201).json({
@@ -265,7 +278,16 @@ export const deleteTransaction = async (req, res) => {
             group.transactions = group.transactions.filter((t) => {
                 return t.transaction.toString() !== transactionId.toString();
             })
-            // console.log (group);
+
+            // console.log ("Initially");
+            // console.log (group.transactionMatrix);
+            group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(group.transactionMatrix, transaction);
+            // console.log ("Finally");
+            // console.log (group.transactionMatrix);
+            
+            group.markModified('transactionMatrix.matrix');
+            group.markModified('transactionMatrix.rowSum');
+            group.markModified('transactionMatrix.colSum');
             await group.save();
 
             await Transaction.findByIdAndDelete(transactionId);

@@ -42,3 +42,7 @@
   _id: new ObjectId('67fff068e6d4e04a81d7b3c8'),
   createdAt: 2025-04-16T18:01:12.345Z
 }
+
+
+{ user: '6803105f1f6406203af99a8b', username: 'sagnik', share: 0.5 }
+{ user: '6803105f1f6406203af99a93', username: 'mayank', share: 0.5 }
