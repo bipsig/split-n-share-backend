@@ -1,29 +1,26 @@
 import mongoose from "mongoose";
 import User from "../../models/User.js";
 import { fetchUsernameWithUserId } from "../user/fetchUsernameWithUserId.js";
+import { fetchUserIdWithUsername } from "../user/fetchUserIdWithUsername.js";
 
-export const addMemberToGroup = async (userId, group) => {
+export const addMemberToGroup = async (username, group) => {
     try {
-        if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return { 
-                success: false, 
-                message: `Invalid user ID: ${userId}`
-            };
-        }
-
-        const isAlreadyMember = group.members.some(member => member.user.toString() === userId);
-        if (isAlreadyMember) {
+        console.log("IN Function");
+        const userId = await fetchUserIdWithUsername (username);
+        console.log ("Username: " + username + " UserID: " + userId);
+        if (!userId) {
+            // console.log ("FAILED with invalid username" + username);
             return { 
                 success: false,
-                message: `User ${userId} is already a member of the group`
+                message: `User with username '${username}' doesn't exist in the database`
             }
         }
 
-        const username = await fetchUsernameWithUserId (userId);
-        if (!username) {
+        const isAlreadyMember = group.members.some(member => member.username.toString() === username);
+        if (isAlreadyMember) {
             return { 
                 success: false,
-                message: `User ${userId} doesn't exist in the database`
+                message: `User with username '${username}' is already a member of the group`
             }
         }
 
@@ -34,8 +31,9 @@ export const addMemberToGroup = async (userId, group) => {
             joinedAt: Date.now(),
             status: 'active'
         });
+        console.log (group.members);
 
-        console.log (group._id + ": " + group.slug);
+        // console.log (group._id + ": " + group.slug);
         await User.findByIdAndUpdate(userId, {
             $addToSet: {
                 groups: {
@@ -47,10 +45,10 @@ export const addMemberToGroup = async (userId, group) => {
 
         return { 
             success: true,
-            message: `User ${userId} successfully added to the group`
+            message: `User with username '${username}' successfully added to the group`
         };
     }
     catch (err) {
-        return { success: false, message: `An error occurred while adding user ${userId} to the group` };
+        return { success: false, message: `An error occurred while adding user with username '${userId}' to the group` };
     }
 }

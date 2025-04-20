@@ -186,24 +186,21 @@ export const addMembersToGroup = async (req, res) => {
         }
 
         const responses = [];
-        for (let newUserId of newMembers) {
-            const response = await addMemberToGroup(newUserId, group);
+        for (let newUsername of newMembers) {
+            const response = await addMemberToGroup(newUsername, group);
             responses.push({
-                userId: newUserId,
+                username: newUsername,
                 ...response
             });
         }
 
-        // console.log (responses);
-        // console.log (group);
-
-        const addedMembers = responses.filter((response) => response.success).map((response) => response.userId);
+        const addedMembers = responses.filter((response) => response.success).map((response) => response.username);
         const failedMembers = responses.filter((response) => !response.success);
 
         for (let member of addedMembers) {
-            const memberUsername = await fetchUsernameWithUserId(member);
+            // const memberUsername = await fetchUsernameWithUserId(member);
             // console.log(memberUsername);
-            group.transactionMatrix = addMemberToTransactionMatrix(memberUsername, group.transactionMatrix);
+            group.transactionMatrix = addMemberToTransactionMatrix(member, group.transactionMatrix);
         }
 
         console.log (group.transactionMatrix);
@@ -263,20 +260,22 @@ export const removeMembersFromGroup = async (req, res) => {
         }
 
         const responses = [];
-        for (let userId of removeMembers) {
-            const response = await removeMemberFromGroup(userId, group);
+        for (let user_name of removeMembers) {
+            const response = await removeMemberFromGroup(user_name, group);
+            // const response = await removeMemberFromGroup(userId, group);
             responses.push({
-                userId: userId,
+                username: user_name,
+                // userId: userId,
                 ...response
             });
         }
 
         // console.log (responses);
-        const removedMembers = responses.filter((response) => response.success).map((response) => response.userId);
+        const removedMembers = responses.filter((response) => response.success).map((response) => response.username);
         const failedMembers = responses.filter((response) => !response.success);
 
-        for (let member of removedMembers) {
-            const memberUsername = await fetchUsernameWithUserId(member);
+        for (let memberUsername of removedMembers) {
+            // const memberUsername = await fetchUsernameWithUserId(member);
             // console.log(memberUsername);
             group.transactionMatrix = removeMemberFromTransactionMatrix(memberUsername, group.transactionMatrix);
         }

@@ -1,8 +1,18 @@
 import mongoose from "mongoose";
 import User from "../../models/User.js";
+import { fetchUserIdWithUsername } from "../user/fetchUserIdWithUsername.js";
 
-export const removeMemberFromGroup = async (userId, group) => {
+export const removeMemberFromGroup = async (username, group) => {
     try {
+        const userId = await fetchUserIdWithUsername(username);
+        if (!userId) {
+            // console.log ("FAILED with invalid username" + username);
+            return { 
+                success: false,
+                message: `User with username '${username}' doesn't exist in the database`
+            }
+        }
+
         if (!mongoose.Types.ObjectId.isValid(userId)) {
             return { 
                 success: false, 
@@ -10,12 +20,12 @@ export const removeMemberFromGroup = async (userId, group) => {
             };
         }
 
-        const index = group.members.findIndex((member) => member.user.toString() === userId);
+        const index = group.members.findIndex((member) => member.username.toString() === username);
 
         if (index === -1) {
             return { 
                 success: false,
-                message: `User ${userId} is not a member of the group`
+                message: `User with username '${username}' is not a member of the group`
             }
         }
 
@@ -28,10 +38,10 @@ export const removeMemberFromGroup = async (userId, group) => {
 
         return {
             success: true,
-            message: `User ${userId} removed from the group successfully!`
+            message: `User with username '${userId}' removed from the group successfully!`
         };
     }
     catch (err) {
-        return { success: false, message: `An error occurred while removing user ${userId} from the group` };
+        return { success: false, message: `An error occurred while removing user ${username} from the group` };
     }
 }
