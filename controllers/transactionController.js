@@ -10,6 +10,7 @@ import { fetchTransactionDetailsById } from "../utils/transaction/fetchTransacti
 import { deleteTransactionFromUsers } from "../utils/transaction/deleteTransactionFromUsers.js";
 import { addTransactionToTransactionMatrix } from "../utils/transactionMatrix/addTransactionToTransactionMatrix.js";
 import { deleteTrnasactionFromTransactionMatrix } from "../utils/transactionMatrix/deleteTransactionFromTransactionMatrix.js";
+import { fetchUserIdWithUsername } from "../utils/user/fetchUserIdWithUsername.js";
 
 /* CREATING A NEW TRANSACTION BY LOGGED IN USER */
 export const createTransaction = async (req, res) => {
@@ -61,12 +62,14 @@ export const createTransaction = async (req, res) => {
 
         // const result = userInGroup(user_paid, group);
         // console.log (result);
-        if (!userInGroup(user_paid, group)) {
+        const userPaidId = (await fetchUserIdWithUsername(user_paid)).toString();
+        console.log (userPaidId);
+        if (!userInGroup(userPaidId, group)) {
             return res.status(404).json({
                 message: `User paid doesn't belong to this particular group`
             });
         }
-        const userPaidUsername = await fetchUsernameWithUserId(user_paid);
+        // const userPaidUsername = await fetchUsernameWithUserId(user_paid);
         // console.log ("Reached here");
 
         // console.log (users_involved);
@@ -74,16 +77,17 @@ export const createTransaction = async (req, res) => {
         let finalUsers = [];
         for (let user of users_involved) {
             // console.log(user);
-            if (!userInGroup(user.user, group)) {
+            const userId = (await fetchUserIdWithUsername(user.user)).toString();
+            if (!userInGroup(userId, group)) {
                 return res.status(404).json({
                     message: `User with userId ${user.user} doesn't belong to this group`
                 });
             }
             totalShare += user.share;
-            const username = await fetchUsernameWithUserId(user.user);
+            // const username = await fetchUsernameWithUserId(user.user);
             finalUsers.push({
-                user: user.user,
-                username,
+                user: userId,
+                username: user.user,
                 share: user.share
             });
         }
@@ -106,12 +110,13 @@ export const createTransaction = async (req, res) => {
             description,
             slug,
             amount,
-            user_paid: { userId: user_paid, username: userPaidUsername },
+            user_paid: { userId: userPaidId, username: user_paid },
             users_involved: finalUsers,
             groupId,
             type,
             groupSlug: group.slug
         });
+        // console.log (transaction);
 
         const result = await transaction.save();
 
@@ -126,7 +131,7 @@ export const createTransaction = async (req, res) => {
         // console.log ("Initial group");
         // console.log (group.transactionMatrix);
 
-        group.transactionMatrix = addTransactionToTransactionMatrix(group.transactionMatrix, userPaidUsername, finalUsers, amount);
+        group.transactionMatrix = addTransactionToTransactionMatrix(group.transactionMatrix, user_paid, finalUsers, amount);
         
 
         for (let user of finalUsers) {
