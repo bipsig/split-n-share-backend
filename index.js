@@ -10,6 +10,7 @@ import groupRoutes from './routes/groupRoutes.js'
 import transactionRoutes from './routes/transactionRoutes.js'
 import { validateToken } from "./middleware/authMiddleware.js";
 import users from "./data/users.js";
+import { globalErrorHandler } from "./middleware/errorHandler.js";
 
 dotenv.config();
 
@@ -79,3 +80,5 @@ app.use ('/api/v1/transactions', transactionRoutes);
 app.listen(port, () => {
     console.log(`Server running successfully on port number ${port}`);
 });
+
+app.use (globalErrorHandler);

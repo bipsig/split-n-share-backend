@@ -4,29 +4,78 @@ import User from "../models/User.js";
 import Blacklist from "../models/Blacklist.js";
 import { blacklistToken } from "../utils/auth/blacklistToken.js"
 import { createToken } from "../utils/createToken.js";
+import { asyncErrorHandler } from "../utils/errors/asyncErrorHandler.js";
+import { errorCodes } from "../utils/errors/errorCodes.js";
+import { errorMessages } from "../utils/errors/errorMessages.js";
+import { AppError } from "../utils/errors/appError.js";
+import { sendSuccess } from "../utils/errors/responseHandler.js";
 
-/* REGISTERING A USER */
-export const register = async (req, res) => {
-    console.log ('Registering a User');
-    try {
-        let newUser = new User(req.body);
+/**
+ * Register a new user
+ * @route POST /auth/register
+ * @access Public 
+ */
+export const register = asyncErrorHandler(async (req, res, next) => {
+    console.log (`Registering a user`);
 
-        const userPassword = newUser.password;
-        
-        let genPassword = await bcrypt.hash (userPassword, parseInt(process.env.SALT_ROUNDS));
-        newUser.password = genPassword;
+    const userData = req.body;
+    
+    const existingUser = await User.findOne({
+        $or: [
+            { email: userData.email },
+            { username: userData.username },
+            ...( userData.mobileNumber ? [{ mobileNumber: userData.mobileNumber}] : [])
+        ]
+    });
 
-        const savedUser = await newUser.save();
-        console.log ('User Registered SUccessfully');
-        res.status(201).json(savedUser);
+    if (existingUser) {
+        let errorMessage = '';
+        let errorCode = '';
+
+        if (existingUser.email === userData.email) {
+            errorCode = errorCodes.USER_ALREADY_EXISTS;
+            errorMessage = errorMessages.EMAIL_ALREADY_EXISTS;
+        }
+        else if (existingUser.username === userData.username) {
+            errorCode = errorCodes.USER_USERNAME_EXISTS;errorMessage = errorMessages.USERNAME_ALREADY_EXISTS;
+        }
+        else if (existingUser.mobileNumber === userData.mobileNumber) {
+            errorCode = errorCodes.USER_MOBILE_EXISTS;
+            errorMessage = errorMessages.MOBILE_ALREADY_EXISTS;
+        }
+
+        return next(new AppError(errorMessage, 409, errorCode, true));
     }
-    catch (err) {
-        console.log ('Unable to register user!');
-        res.status(500).json({
-            error: err.message
-        });
-    }
-};
+
+    let newUser = new User(userData);
+
+    // HASH PASSWORD
+    const saltRounds = parseInt(process.env.SALT_ROUNDS) || 20;
+    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
+    newUser.password = hashedPassword;
+
+    const savedUser = await newUser.save();
+
+    savedUser.password = undefined;
+
+    console.log ('User registered successfully!')
+
+    sendSuccess(
+        res, 
+        201, 
+        errorMessages.REGISTRATION_SUCCESS,
+        {
+            user: {
+                id: savedUser._id,
+                firstName: savedUser.firstName,
+                lastName: savedUser.lastName,
+                username: savedUser.username,
+                email: savedUser.email,
+                createdAt: savedUser.createdAt
+            }
+        }
+    )
+});
 
 /* LOGGING IN A USER */
 export const login = async (req, res) => {
