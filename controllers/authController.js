@@ -142,55 +142,36 @@ export const login = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* LOGGING OUT A USER */
-export const logout = async (req, res) => {
-    console.log ("Logging out the User");
-    try {
-        const authHeader = req.headers["authorization"];
-        const token = authHeader && authHeader.split (' ')[1];
-    
-        if (!token) {
-            return res.status(401).json({
-                message: 'No token available'
-            });
-        }
+/**
+ * Logout an user
+ * @route DELETE /auth/logout 
+ * @access Public 
+ */
 
-        const result = await Blacklist.find({
-            token: token
-        });
+export const logout = asyncErrorHandler(async (req, res, next) => {
+    console.log ('Logging out an user');
 
-        console.log (result);
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(' ')[1];
 
-        if (result.length > 0) {
-            return res.status(200).json({
-                message: 'Token already added to Blacklist'
-            })
-        }
-
-        // const decodedToken = jwt.decode(token);
-        // // console.log (decodedToken);
-        // const expiresAt = new Date(decodedToken.exp * 1000)
-    
-        // const blacklistedToken = new Blacklist ({
-        //     token: token,
-        //     expiresAt: expiresAt
-        // });
-        // // console.log (blacklistedToken);
-        // await blacklistedToken.save();
-
-        blacklistToken(token);
-
-        res.status(201).json({
-            message: "User logged out successfully!"
-        });
+    if (!token) {
+        return next(new AppError (
+            errorMessages.TOKEN_MISSING, 
+            401, 
+            errorCodes.AUTH_TOKEN_MISSING
+        ));
     }
-    catch (err) {
-        console.log ('Unable to logout the User');
-        res.status(500).json( {
-            error: err.message
-        })
+
+    const existingBlacklistEntry = await Blacklist.findOne({ token: token });
+
+    if (existingBlacklistEntry) {
+        return sendSuccess(res, 200, 'You are already logged out');
     }
-}
+
+    blacklistToken(token);
+
+    sendSuccess(res, 200, errorMessages.LOGOUT_SUCCESS);
+})
 
 /* CLEANING the Database to remove the expired tokens */
 export const cleanup = async (req, res) => {
