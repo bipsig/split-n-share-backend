@@ -10,7 +10,7 @@ export const blacklistToken = async (token) => {
             throw new AppError(
                 'Invalid token format', 
                 400, 
-                ERROR_CODES.AUTH_TOKEN_INVALID
+                errorCodes.AUTH_TOKEN_INVALID
             );
         }
 
