@@ -173,32 +173,36 @@ export const logout = asyncErrorHandler(async (req, res, next) => {
     sendSuccess(res, 200, errorMessages.LOGOUT_SUCCESS);
 })
 
-/* CLEANING the Database to remove the expired tokens */
-export const cleanup = async (req, res) => {
+/**
+ * 
+ * @route DELETE /auth/cleanup
+ * @access Private (Developer only) 
+ */
+
+export const cleanup = asyncErrorHandler(async (req, res, next) => {
     console.log ('Clearing the expired tokens');
-    try {
-        const currentDate = new Date();
-        // console.log (currentDate);
 
-        const result = await Blacklist.deleteMany({
-            expiresAt: {$lt: currentDate}
-        });
+    const currentDate = new Date();
 
-        // console.log (result);
-        if (parseInt(result.deletedCount) === 0) {
-            res.status(200).json({
-                message: 'No expired tokens in the database'
-            });
-        }
-        else {
-            res.status(200).json({
-                message: `${result.deletedCount} expired tokens deleted from the database`
-            })
-        }
+    const result = await Blacklist.deleteMany({
+        expiresAt: { $lt: currentDate }
+    });
+
+    const deletedCount = parseInt(result.deletedCount);
+
+    if (deletedCount === 0) {
+        sendSuccess(
+            res,
+            200,
+            'No expired tokens found in the database'
+        );
     }
-    catch (err) {
-        res.status(500).json({
-            error: err.message
-        })
+    else {
+        sendSuccess(
+            res,
+            201,
+            `Successfully reSuccessfully removed ${deletedCount} expired token${deletedCount > 1 ? 's' : ''} from the database.`,
+            { deletedCount }
+        );
     }
-}
+});
