@@ -77,47 +77,70 @@ export const register = asyncErrorHandler(async (req, res, next) => {
     )
 });
 
-/* LOGGING IN A USER */
-export const login = async (req, res) => {
-    console.log ('Logging in a User');
-    try {
-        const { username, password } = req.body;
-        // console.log (username, password);
+/**
+ * Login an existing user
+ * @route POST /auth/login 
+ * @access Public 
+ */
 
-        const user = await User.findOne({username: username });
-        // console.log (user);
+export const login = asyncErrorHandler(async (req, res, next) => {
+    console.log (`Logging in a user`);
 
-        if (!user) {
-            return res.status(401).json({
-                message: "Username not found!"
-            });
-        }
+    const { username, password } = req.body;
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        // console.log (isMatch);
-
-        if (!isMatch) {
-            return res.status(401).json({
-                message: "Invalid Credentials!"
-            }); 
-        }
-
-        const accessToken = createToken (user);
-        
-        user.password = undefined;
-
-        return res.status(200).json({
-            accessToken: accessToken
-        });
-        
+    if (!username || !password) {
+        return next(new AppError(
+            'Username and password are required', 
+            400, 
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
     }
-    catch (err) {
-        console.log ('Unable to log in the user!');
-        res.status(500).json({
-            error: err.message
-        });
+
+    const user = await User.findOne({ username: username });
+
+
+    if (!user) {
+        return next(new AppError (
+            errorMessages.USER_NOT_FOUND, 
+            401, 
+            errorCodes.USER_NOT_FOUND
+        ));
     }
-}
+
+    if (!user.isActive) {
+        return next(new AppError (
+            'You account has been deactivated. Please contact support!', 
+            401, 
+            errorCodes.AUTH_UNAUTHORIZED
+        ));
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+        return next(new AppError (
+            errorMessages.INVALID_CREDENTIALS, 
+            401, 
+            errorCodes.AUTH_INVALID_CREDENTIALS
+        ));
+    }
+
+    const accessToken = createToken (user);
+
+    sendSuccess(
+        res,
+        200,
+        errorMessages.LOGIN_SUCCESS,
+        {
+            accessToken,
+            user: {
+                id: user._id,
+                username: user.username,
+                totalBalance: user.totalBalance
+            }
+        }
+    );
+})
 
 /* LOGGING OUT A USER */
 export const logout = async (req, res) => {
