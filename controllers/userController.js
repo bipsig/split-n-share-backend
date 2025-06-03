@@ -42,50 +42,38 @@ export const getUserDetails = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* GETTING LOGGED IN USER DETAILS */
-export const getUserDetails1 = async (req, res) => {
-    console.log ('Getting Logged in User Details');
-    try {
-        // console.log (req.user);
-        const user = await User.findOne({
-            username: req.user.username
-        });
-        // console.log (user);
-        return res.status(200).json({
-            ...user._doc
-        });
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
-
-/* UPDATE DETAILS OF LOGGED IN USER */
-export const updateDetails = async (req, res) => {
+/**
+ * Update details of a logged in user
+ * @route PATCH users/me
+ * @access Private
+ */
+export const updateDetails = asyncErrorHandler(async (req, res, next) => {
     console.log (`Updating details of user with username '${req.user.username}'`);
-    try {
-        const user = await updateUserWithUsername (req.body, req.user.username);
-        await user.save();
 
-        const newAccessToken = createToken (user);
+    const user = await updateUserWithUsername(req.body, req.user.username);
+    await user.save();
 
-        const authHeader = req.headers["authorization"];
-        const oldAccessToken = authHeader && authHeader.split (' ')[1];
-        await blacklistToken (oldAccessToken);
-        
-        return res.status(201).json({
+    const newAccessToken = createToken(user);
+
+    const authHeader = req.headers['authorization'];
+    const oldAccessToken = authHeader && authHeader.split(' ')[1];
+    
+    if (oldAccessToken) {
+        await blacklistToken(oldAccessToken);
+    }
+
+    user.password = undefined;
+
+    sendSuccess(
+        res,
+        200,
+        'User details updated successfully!',
+        { 
             accessToken: newAccessToken,
-            userDetails: user
-        });
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
-}
+            user 
+        }
+    );
+})
 
 /* CHECK WHETHER AN EMAIL IS AVAILABLE OR NOT */
 export const isEmailUnique = async (req, res) => {

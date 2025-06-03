@@ -2,20 +2,21 @@ import User from "../../models/User.js";
 
 export const checkMobileExists = async (mobile) => {
     try {
-        const user = await User.findOne({ mobileNumber: mobile});
-        // console.log (user);
+        const user = User.findOne({
+            mobileNumber: mobile
+        });
 
-        if (user) {
-            // console.log ('Number exists');
-            return true;
-        }
-        else {
-            // console.log ('Number doesnt exist');
-            return false;
-        }
+        return !!user;
     }
     catch (err) {
-        console.error('Error checking mobile existence:', err.message);
-        throw new Error('Error checking mobile existence');
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while checking if mobile number exists',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }

@@ -1,22 +1,24 @@
 import User from "../../models/User.js";
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
 
 export const checkEmailExists = async (email) => {
     try {
-        // console.log ('In util', email);
-        const user = await User.findOne({ email: email });
-        // console.log (user);
+        const user = User.findOne({
+            email: email
+        });
 
-        if (user) {
-            // console.log ('Email exists');
-            return true;
-        }
-        else {
-            // console.log ('Email doesnt exist');
-            return false;
-        }
+        return !!user;
     }
     catch (err) {
-        console.error('Error checking email existence:', err.message);
-        throw new Error('Error checking email existence');
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while checking if email exists',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }

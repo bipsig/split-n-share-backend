@@ -1,43 +1,65 @@
 import User from "../../models/User.js";
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
+import { errorMessages } from "../errors/errorMessages.js";
 import { checkEmailExists } from "./checkEmailExists.js";
 import { checkMobileExists } from "./checkMobileExists.js";
 
 export const updateUserWithUsername = async (body, username) => {
     try {
-        /* Details that can be updated in this function:
-            -- firstName, lastName, location, occupation, gender
-            -- email and mobileNumber => Check for uniqueness
-        */
-
-        if (body.email && await checkEmailExists(body.email)) {
-            throw new Error('Email already in use');
-        }
-        
-        if (body.mobileNumber && await checkMobileExists(body.mobileNumber)) {
-            throw new Error('Mobile Number already in use');
-        }
-
         const user = await User.findOne({
             username: username
         });
 
         if (!user) {
-            console.error('User not found!');
-            throw new Error('User not found!');
+            throw new AppError(
+                errorMessages.USER_NOT_FOUND,
+                404,
+                errorCodes.AUTH_USER_NOT_FOUND
+            );
         }
 
-        if (body.firstName) user.firstName = body.firstName;
-        if (body.lastName) user.lastName = body.lastName;
-        if (body.email) user.email = body.email;
-        if (body.mobileNumber) user.mobileNumber = body.mobileNumber;
-        if (body.location) user.location = body.location;
-        if (body.occupation) user.occupation = body.occupation;
-        if (body.gender) user.gender = body.gender;
+        if (body.email &&  body.email !== user.email) {
+            const emailExists = checkEmailExists(body.email);
+            if (emailExists) {
+                throw new AppError(
+                    errorMessages.EMAIL_ALREADY_EXISTS,
+                    409,
+                    errorCodes.USER_EMAIL_EXISTS
+                );
+            }
+        }
+
+        if (body.mobileNumber && body.mobileNumber !== user.mobileNumber) {
+            const mobileExists = await checkMobileExists(body.email);
+            if (mobileExists) {
+                throw new AppError(
+                    errorMessages.MOBILE_ALREADY_EXISTS,
+                    409,
+                    errorCodes.USER_MOBILE_EXISTS
+                );
+            }
+        }
+
+        const allowedUpdates = ['firstName', 'lastName', 'location', 'occupation', 'gender', 'email', 'mobileNumber'];
+
+        allowedUpdates.forEach(field => {
+            if (body [field] !== undefined) {
+                user [field] = body [field];
+            }
+        });
 
         return user;
     }
     catch (err) {
-        console.error('Error updating user with username:', err.message);
-        throw new Error(err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while updating user with username',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }
