@@ -28,7 +28,7 @@ export const validateToken = asyncErrorHandler(async (req, res, next) => {
         token: token
     });
 
-    if (blacklistedToken) {
+    if (blacklistedToken.size > 0) {
         return next(new AppError(
             errorMessages.TOKEN_BLACKLISTED,
             403,
@@ -37,7 +37,7 @@ export const validateToken = asyncErrorHandler(async (req, res, next) => {
     }
 
     try {
-        jwt.verify(token, process.env.JWT_SECRET);
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
         req.user = payload;
         next();
     }

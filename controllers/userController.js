@@ -6,9 +6,44 @@ import { deleteUserWithUsername } from "../utils/user/deleteUserWithUsername.js"
 import { updateUserWithUsername } from "../utils/user/updateUserWithUsername.js";
 import { updatePasswordWithUsername } from "../utils/user/updatePasswordWithUsername.js";
 import { createToken } from "../utils/createToken.js";
+import { asyncErrorHandler } from "../utils/errors/asyncErrorHandler.js";
+import { AppError } from "../utils/errors/appError.js";
+import { errorMessages } from "../utils/errors/errorMessages.js";
+import { errorCodes } from "../utils/errors/errorCodes.js";
+import { sendSuccess } from "../utils/errors/responseHandler.js";
+
+/**
+ * Get logged in user details
+ * @route GET /users/me 
+ * @access Private
+ */
+export const getUserDetails = asyncErrorHandler(async (req, res, next) => {
+    console.log ('Getting logged in user details');
+
+    const user = await User.findOne({
+        username: req.user.username
+    });
+
+    if (!user) {
+        return next(new AppError(
+            errorMessages.USER_NOT_FOUND,
+            404,
+            errorCodes.AUTH_USER_NOT_FOUND
+        ));
+    }
+
+    user.password = undefined;
+
+    sendSuccess(
+        res,
+        200,
+        'User Details retrieved successfully!',
+        { user }
+    );
+})
 
 /* GETTING LOGGED IN USER DETAILS */
-export const getUserDetails = async (req, res) => {
+export const getUserDetails1 = async (req, res) => {
     console.log ('Getting Logged in User Details');
     try {
         // console.log (req.user);
