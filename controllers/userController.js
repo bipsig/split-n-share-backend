@@ -133,23 +133,26 @@ export const searchUser  =async (req, res) => {
 }
 
 /* UPDATE PASSWORD OF LOGGED IN USER */
-export const updatePassword = async (req, res) => {
+/**
+ * Update Password of Logged In User
+ * @route  PATCH users/me/password
+ * @access Private 
+ */
+export const updatePassword = asyncErrorHandler(async (req, res, next) => {
     console.log (`Updating password of user '${req.user.username}'`);
-    try {
-        const user = await updatePasswordWithUsername(req.body, req.user.username);
 
-        req.body.oldPassword = undefined;
-        req.body.newPassword = undefined;
+    const user = await updatePasswordWithUsername(req.body, req.user.username);
+    await user.save();
 
-        await user.save();
-        return res.status(200).json(user);
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
-}
+    user.password = undefined;
+
+    sendSuccess(
+        res,
+        200,
+        'Password updated successfully!',
+        { user }
+    );
+})
 
 /* DELETE LOGGED IN USER */
 export const deleteUser = async (req, res) => {

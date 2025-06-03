@@ -1,36 +1,67 @@
 import bcrypt from "bcrypt";
 import User from "../../models/User.js";
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
+import { errorMessages } from "../errors/errorMessages.js";
 
 export const updatePasswordWithUsername = async (body, username) => {
     try {
-        if (body.oldPassword === body.newPassword) {
-            throw new Error('Current Passoword and New Password cannot be same!');
+        if (!body.oldPassword || !body.newPassword) {
+            return new AppError(
+                'Both current and new password are required',
+                400,
+                errorCodes.VALIDATION_REQUIRED_FIELD
+            );
         }
 
-        const user = await User.findOne ({ username: username });
+        if (body.oldPassword === body.newPassword) {
+            throw new AppError(
+                'New password must be different from old password',
+                400,
+                errorCodes.VALIDATION_INVALID_FORMAT
+            );
+        }
+
+        const user = await User.findOne({
+            username: username
+        });
 
         if (!user) {
-            console.error('User not found!');
-            throw new Error('User not found!');
+            throw new AppError(
+                errorMessages.USER_NOT_FOUND,
+                404,
+                errorCodes.AUTH_USER_NOT_FOUND
+            );
         }
 
         const oldPassword = body.oldPassword;
         const isMatch = await bcrypt.compare(oldPassword, user.password);
 
         if (!isMatch) {
-            console.error('Invalid Current Password!');
-            throw new Error('Invalid Current Password!')
+            throw new AppError(
+                'Current password is incorrect',
+                400,
+                errorCodes.AUTH_INVALID_CREDENTIALS
+            );
         }
 
         const newPassword = body.newPassword;
-        const genPassword = await bcrypt.hash (newPassword, parseInt(process.env.SALT_ROUNDS));
-        
-        user.password = genPassword;
+        const saltRounds = parseInt(process.env.SALT_ROUNDS) || 20;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        user.password = hashedPassword;
 
         return user;
     }
     catch (err) {
-        console.error('Error updating password with username:', err.message);
-        throw new Error(err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while updating password with username',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }
