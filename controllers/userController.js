@@ -216,22 +216,25 @@ export const getAccessToken = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* GET ALL USERS (DEVELOPER PRIVILEGES) */
-export const getAllUsers = async (req, res) => {
+/**
+ * Get all Users
+ * @route users/all 
+ * @access Private (Developer only)
+ */
+export const getAllUsers = asyncErrorHandler(async (req, res, next) => {
     console.log ('Getting all registered users');
-    try {
-        const users = await User.find({});
-        // console.log (users);
-        return res.status(200).json({
+    const users = await User.find({}).select('-password');
+
+    sendSuccess(
+        res,
+        200,
+        `Retrieved ${users.length} users(s)`,
+        {
+            count: users.length,
             users
-        });
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
+        }
+    );
+})
 
 export const deleteAllUsers = async (req, res) => {
     try {
