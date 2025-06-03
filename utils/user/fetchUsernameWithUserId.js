@@ -1,18 +1,23 @@
 import User from "../../models/User.js";
+import { AppError } from "../errors/appError.js";
 
 export const fetchUsernameWithUserId = async (userId) => {
     try {
-        const username = await User.findOne ({ _id: userId }).select('username');
+        const username = await User.findOne({
+            _id: userId
+        }).select ('username');
 
-        if (username) {
-            return username.username;
-        }
-        else {
-            return null;
-        }
+        return username ? username : null;
     }
     catch (err) {
-        console.error('Error fetching Username from given userId', err.message);
-        throw new Error('Error fetching Username from given userId');
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while trying to fetch username with userId',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        )
     }
 }
