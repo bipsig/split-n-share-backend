@@ -75,8 +75,52 @@ export const updateDetails = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
+/**
+ * Check whether an email is available or not
+ * @route GET users/is-email-unique?email
+ * @access Public
+ */
+export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
+    console.log ('Checking whether email is unique or not');
+
+    const { email } = req.query;
+
+    if (!email || !email.trim()) {
+        return next (new AppError(
+            'Email parameter is required',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
+    console.log (email.trim());
+    const emailExists = await checkEmailExists(email.trim());
+
+    if (emailExists) {
+        sendSuccess(
+            res,
+            200,
+            'Email is already in use',
+            {
+                available: false,
+                email
+            }
+        );
+    }
+    else{
+        sendSuccess(
+            res,
+            200,
+            'Email is available for use',
+            {
+                available: true,
+                email
+            }
+        );
+    }
+})
+
 /* CHECK WHETHER AN EMAIL IS AVAILABLE OR NOT */
-export const isEmailUnique = async (req, res) => {
+export const isEmailUnique1 = async (req, res) => {
     console.log ('Checking whether email is unique or not');
     try {
         // console.log (req.query.email);

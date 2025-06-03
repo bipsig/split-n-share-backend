@@ -2,7 +2,7 @@ import User from "../../models/User.js";
 
 export const checkMobileExists = async (mobile) => {
     try {
-        const user = User.findOne({
+        const user = await User.findOne({
             mobileNumber: mobile
         });
 

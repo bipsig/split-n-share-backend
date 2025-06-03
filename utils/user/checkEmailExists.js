@@ -4,10 +4,9 @@ import { errorCodes } from "../errors/errorCodes.js";
 
 export const checkEmailExists = async (email) => {
     try {
-        const user = User.findOne({
+        const user = await User.findOne({
             email: email
         });
-
         return !!user;
     }
     catch (err) {
