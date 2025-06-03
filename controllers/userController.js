@@ -236,16 +236,22 @@ export const getAllUsers = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-export const deleteAllUsers = async (req, res) => {
-    try {
-        // console.log("Deleting all users");
-        const result = await User.deleteMany({});
-        console.log(`${result.deletedCount} user(s) deleted.`);
-        res.status(200).json({
-            message: `${result.deletedCount} user(s) deleted successfully.`
-        });
-    } 
-    catch (err) {
-        console.error('Error deleting users:', err);
-    }
-};
+/**
+ * Delete all Users
+ * @route DELETE users/all 
+ * @access Private (Developer only)
+ */
+export const deleteAllUsers = asyncErrorHandler(async (req, res, next) => {
+    console.log ("Deleting all Users");
+
+    const result = await User.deleteMany({});
+
+    sendSuccess(
+        res,
+        200,
+        `${result.deletedCount} user(s) deleted successfully!`,
+        {
+            deletedCount: result.deletedCount
+        }
+    );
+})
