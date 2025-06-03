@@ -1,24 +1,28 @@
 import User from "../../models/User.js";
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
+import { errorMessages } from "../errors/errorMessages.js";
 
 export const deleteUserWithUsername = async (username) => {
     try {
-        // console.log ('In Function');
         const user = await User.findOne({
             username: username
         });
 
         if (!user) {
-            console.error('User not found!');
-            throw new Error('User not found!');
+            throw new AppError(
+                errorMessages.USER_NOT_FOUND,
+                404,
+                errorCodes.AUTH_USER_NOT_FOUND
+            );
         }
 
-        // console.log (user);
-        // console.log (parseFloat(user.totalBalance));
-        // console.log (typeof(parseFloat(user.totalBalance)));
-
         if (parseFloat(user.totalBalance) !== 0.0) {
-            console.error('Balances are not settled. Cannot proceed to delete account!');
-            throw new Error('Balances are not settled. Cannot proceed to delete account!');
+            throw new AppError(
+                errorMessages.BALANCE_NOT_SETTLED,
+                400,
+                errorCodes.USER_BALANCE_NOT_SETTLED
+            );
         }
 
         await User.deleteOne({
@@ -26,9 +30,17 @@ export const deleteUserWithUsername = async (username) => {
         });
 
         return true;
+
     }
     catch (err) {
-        console.error('Error deleting user with username:', err.message);
-        throw new Error(err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while deleting user with username',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }

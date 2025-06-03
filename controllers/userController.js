@@ -154,26 +154,29 @@ export const updatePassword = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* DELETE LOGGED IN USER */
-export const deleteUser = async (req, res) => {
+/**
+ * Delete logged in user
+ * @route DELETE users/me
+ * @access Private
+ */
+export const deleteUser = asyncErrorHandler(async (req, res, next) => {
     console.log (`Deleting user with username ${req.user.username}`);
-    try {
-        await deleteUserWithUsername (req.user.username)
-        
-        const authHeader = req.headers["authorization"];
-        const oldAccessToken = authHeader && authHeader.split (' ')[1];
+
+    await deleteUserWithUsername(req.user.username);
+
+    const authHeader = req.headers["authorization"];
+    const oldAccessToken = authHeader && authHeader.split (' ')[1];
+
+    if (oldAccessToken) {
         await blacklistToken (oldAccessToken);
-        
-        return res.status(200).json({
-            message: "User successfully deleted!"
-        })
     }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
-}
+
+    sendSuccess(
+        res,
+        200,
+        'User deleted successfully!',
+    );
+})
 
 /* RETRIEVE ACCESS TOKEN DETAILS */
 export const getAccessToken = async (req, res) => {

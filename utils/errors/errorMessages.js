@@ -8,6 +8,7 @@ export const errorMessages = {
     TOKEN_BLACKLISTED: 'This session is no longer valid. Please log in again.',
     UNAUTHORIZED: 'You are not authorized to access this resource.',
     ACCESS_FORBIDDEN: 'Access denied. You do not have permission to perform this action.',
+    BALANCE_NOT_SETTLED: 'Cannot delete account with unsettled balances. Please settle all balances first.',
     
     // Registration Messages
     USER_ALREADY_EXISTS: 'An account with this information already exists.',

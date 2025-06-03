@@ -15,6 +15,7 @@ export const errorCodes = {
     USER_USERNAME_EXISTS: 'USER_003',
     USER_MOBILE_EXISTS: 'USER_004',
     USER_CREATION_FAILED: 'USER_005',
+    USER_BALANCE_NOT_SETTLED: 'USER_006',
     
     // Validation Errors
     VALIDATION_REQUIRED_FIELD: 'VAL_001',
