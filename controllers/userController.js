@@ -119,29 +119,6 @@ export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
     }
 })
 
-/* CHECK WHETHER AN EMAIL IS AVAILABLE OR NOT */
-export const isEmailUnique1 = async (req, res) => {
-    console.log ('Checking whether email is unique or not');
-    try {
-        // console.log (req.query.email);
-        if (await checkEmailExists(req.query.email)) {
-            return res.status(200).json({
-                message: 'Email is already in use!'
-            });
-        }
-        else {
-            return res.status(200).json({
-                message: 'Email is not taken and is available for use!'
-            });
-        }
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
-}
-
 /* SEARCH FOR USERS BASED ON QUERY (username or email) */
 export const searchUser  =async (req, res) => {
     console.log ('Searching for users...');
@@ -176,7 +153,6 @@ export const searchUser  =async (req, res) => {
     }
 }
 
-/* UPDATE PASSWORD OF LOGGED IN USER */
 /**
  * Update Password of Logged In User
  * @route  PATCH users/me/password
@@ -222,20 +198,23 @@ export const deleteUser = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* RETRIEVE ACCESS TOKEN DETAILS */
-export const getAccessToken = async (req, res) => {
+/**
+ * Retrieving access token details
+ * @route users/token 
+ * @access Private
+ */
+export const getAccessToken = asyncErrorHandler(async (req, res, next) => {
     console.log ("Getting Access Token Details");
-    try {
-        return res.status(200).json({
-            message: req.user
-        })
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
-}
+
+    sendSuccess(
+        res,
+        200,
+        'Token details retrieved successfully!',
+        {
+            tokenPayload: req.user
+        }
+    );
+})
 
 /* GET ALL USERS (DEVELOPER PRIVILEGES) */
 export const getAllUsers = async (req, res) => {
