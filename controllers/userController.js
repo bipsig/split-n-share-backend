@@ -119,8 +119,48 @@ export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
     }
 })
 
+/**
+ * Search for users based on some query parameter (username, email or mobile)
+ * @route GET /users/search 
+ * @access Private 
+ */
+export const searchUser = asyncErrorHandler(async (req, res, next) => {
+    console.log ('Searching for users....');
+
+    const { query } = req.query;
+
+    if (!query || query.trim() === '') {
+        return next(new AppError(
+            'Search query cannot be empty',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
+
+    const trimmedQuery = query.trim();
+
+    const users = await User.find({
+        $or: [
+            { username: { $regex: query, $options: "i"}},
+            { email: { $regex: query, $options: "i" }},
+            { mobileNumber: { $regex: query, $options: "i" }}
+        ],
+        isActive: true
+    }).select('firstName lastName username email mobileNumber');
+
+    sendSuccess(
+        res,
+        200,
+        `Found ${users.length} user(s) matching your query`,
+        {
+            count: users.length,
+            users
+        }
+    );
+})
+
 /* SEARCH FOR USERS BASED ON QUERY (username or email) */
-export const searchUser  =async (req, res) => {
+export const searchUser1  =async (req, res) => {
     console.log ('Searching for users...');
     try {
         const query = req.query.query;
