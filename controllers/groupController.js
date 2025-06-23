@@ -38,7 +38,7 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
     });
 
     if (!currentUser) {
-        return next (new AppError(
+        return next(new AppError(
             'User not found',
             404,
             errorCodes.AUTH_USER_NOT_FOUND
@@ -49,52 +49,52 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
     const username = req.user.username;
 
     const matrix = {};
-        const innerMatrix = {};
-        innerMatrix[username] = 0;
-        matrix [username] = innerMatrix;
+    const innerMatrix = {};
+    innerMatrix[username] = 0;
+    matrix[username] = innerMatrix;
 
-        const rowSum = {};
-        rowSum[username] = 0;
+    const rowSum = {};
+    rowSum[username] = 0;
 
-        const colSum = {};
-        colSum[username] = 0;
+    const colSum = {};
+    colSum[username] = 0;
 
-        const transactionMatrix = {
-            matrix,
-            rowSum, 
-            colSum
-        };
+    const transactionMatrix = {
+        matrix,
+        rowSum,
+        colSum
+    };
 
-        const group = new Group ({
-            name: name.trim(),
-            slug,
-            description: description.trim(),
-            currency: currency || 'INR',
-            category: category|| 'Other',
-            createdBy: currentUser._id,
-            members: [{
-                user: currentUser._id,
-                username: currentUser.username,
-                role: 'Admin',
-                joinedAt: Date.now()
-            }],
-            transactionMatrix
-        });
+    const group = new Group({
+        name: name.trim(),
+        slug,
+        description: description.trim(),
+        currency: currency || 'INR',
+        category: category || 'Other',
+        createdBy: currentUser._id,
+        members: [{
+            user: currentUser._id,
+            username: currentUser.username,
+            role: 'Admin',
+            joinedAt: Date.now()
+        }],
+        transactionMatrix
+    });
 
-        const savedGroup = await group.save();
+    const savedGroup = await group.save();
 
-        currentUser.groups.push({
-            group: savedGroup._id,
-            groupSlug: savedGroup.slug
-        });
-        await currentUser.save();
+    currentUser.groups.push({
+        group: savedGroup._id,
+        groupSlug: savedGroup.slug
+    });
+    await currentUser.save();
 
-        sendSuccess(
-            res,
-            201,
-            errorMessages.GROUP_CREATED_SUCCESS,
-            { group: savedGroup }
-        );
+    sendSuccess(
+        res,
+        201,
+        errorMessages.GROUP_CREATED_SUCCESS,
+        { group: savedGroup }
+    );
 })
 
 /**
@@ -112,7 +112,7 @@ export const fetchGroups = asyncErrorHandler(async (req, res, next) => {
         {
             count: groups.length,
             groups
-        } 
+        }
     );
 })
 
@@ -158,83 +158,95 @@ export const fetchGroupDetails = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* ADDING MEMBERS TO A GROUP */
-export const addMembersToGroup = async (req, res) => {
-    console.log ("Adding members to group");
-    try {
-        const{ groupId } = req.params;
-        const { userId, username } = req.user;
-        const { newMembers } = req.body;
-        
-        /* 
-        1. CHECK WHETHER USER BELONGS TO THE GROUP
-        2. CHECK WHETHER USER IS AN ADMIN IN AN GROUP
-        3. ADD THE MEMBERS TO THE members ARRAY OF THE GROUP
-        4. ADD THE groupId TO THE groups ARRAY OF EVERY USER INDIVIDUALLY
-        */
-           
-        const group = await fetchGroupDetailsById (groupId);
+/**
+ * Add Members to a group
+ * @route POST /groups/:groupId/members 
+ * @access Private
+ */
+export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
+    const { groupId } = req.params;
+    const { userId } = req.user;
+    const { newMembers } = req.body;
 
-        if (!group) {
-            return res.status(404).json({
-                message: 'Group not found'
-            });
-        }
-           
-        if (!userInGroup (userId, group)) {
-            return res.status(403).json({
-               message: 'Access Denied! You are not a member of the group!'
-            });
-        }
-            
-        if (fetchUserRole (userId, group.members) !== 'Admin') {
-            return res.status(403).json({
-                message: 'Access Denied! You are not an admin of the group!'
-            });
-        }
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+        return next(new AppError(
+            'Invalid group ID format',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
 
-        const responses = [];
-        for (let newUsername of newMembers) {
-            const response = await addMemberToGroup(newUsername, group);
-            responses.push({
-                username: newUsername,
-                ...response
-            });
-        }
+    if (!newMembers || !Array.isArray(newMembers) || newMembers.length === 0) {
+        return next(new AppError(
+            'New members array is required and cannot be empty',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
 
-        const addedMembers = responses.filter((response) => response.success).map((response) => response.username);
-        const failedMembers = responses.filter((response) => !response.success);
+    const group = await fetchGroupDetailsById(groupId);
 
-        for (let member of addedMembers) {
-            // const memberUsername = await fetchUsernameWithUserId(member);
-            // console.log(memberUsername);
-            group.transactionMatrix = addMemberToTransactionMatrix(member, group.transactionMatrix);
-        }
+    if (!group) {
+        return next(new AppError(
+            errorMessages.GROUP_NOT_FOUND,
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
 
-        console.log (group.transactionMatrix);
-        group.markModified('transactionMatrix.matrix');
-        group.markModified('transactionMatrix.rowSum');
-        group.markModified('transactionMatrix.colSum');
-        await group.save();
+    if (!userInGroup(userId, group)) {
+        return next(new AppError(
+            'Access denied! You are not a member of this group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
 
-        return res.status(201).json({
-            message: 'Members added successfully!',
-            addedMembers,
-            failedMembers
+    if (fetchUserRole(userId, group.members) !== 'Admin') {
+        return next(new AppError(
+            'Access denied! Only group admins can add members',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
+
+    const responses = [];
+    for (let newUsername of newMembers) {
+        const response = await addMemberToGroup(newUsername, group);
+        responses.push({
+            username: newUsername,
+            ...response
         });
-        // console.log (addedMembers);
-        // console.log (failedMembers);
     }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
+
+    const addedMembers = responses.filter((response) => response.success).map((response) => response.username);
+    const failedMembers = responses.filter((response) => !response.success);
+
+    for (let member of addedMembers) {
+        group.transactionMatrix = addMemberToTransactionMatrix(member, group.transactionMatrix);
     }
-}
+
+    group.markModified('transactionMatrix.matrix');
+    group.markModified('transactionMatrix.rowSum');
+    group.markModified('transactionMatrix.colSum');
+    await group.save();
+
+    sendSuccess(
+        res,
+        201,
+        `Successfully added ${addedMembers.length} member(s) to the group!`,
+        {
+            addedMembers,
+            failedMembers,
+            addedCount: addedMembers.length,
+            failedCount: failedMembers.length
+        }
+    );
+})
 
 /* REMOVING MEMBERS FROM A GROUP */
 export const removeMembersFromGroup = async (req, res) => {
-    console.log ('Removing members from a group');
+    console.log('Removing members from a group');
     try {
         /* 
         1. CHECK WHETHER USER BELONGS TO THE GROUP
@@ -243,25 +255,25 @@ export const removeMembersFromGroup = async (req, res) => {
         4. REMOVE THE groupId FROM THE groups ARRAY OF EVERY USER INDIVIDUALLY
         */
 
-        const{ groupId } = req.params;
+        const { groupId } = req.params;
         const { userId, username } = req.user;
         const { removeMembers } = req.body;
 
-        const group = await fetchGroupDetailsById (groupId);
+        const group = await fetchGroupDetailsById(groupId);
 
         if (!group) {
             return res.status(404).json({
                 message: 'Group not found'
             });
         }
-           
-        if (!userInGroup (userId, group)) {
+
+        if (!userInGroup(userId, group)) {
             return res.status(403).json({
-               message: 'Access Denied! You are not a member of the group!'
+                message: 'Access Denied! You are not a member of the group!'
             });
         }
-            
-        if (fetchUserRole (userId, group.members) !== 'Admin') {
+
+        if (fetchUserRole(userId, group.members) !== 'Admin') {
             return res.status(403).json({
                 message: 'Access Denied! You are not an admin of the group!'
             });
@@ -288,12 +300,12 @@ export const removeMembersFromGroup = async (req, res) => {
             group.transactionMatrix = removeMemberFromTransactionMatrix(memberUsername, group.transactionMatrix);
         }
 
-        console.log (group.transactionMatrix);
+        console.log(group.transactionMatrix);
         group.markModified('transactionMatrix.matrix');
         group.markModified('transactionMatrix.rowSum');
         group.markModified('transactionMatrix.colSum');
         await group.save();
-        
+
         return res.status(201).json({
             message: 'Members removed successfully!',
             removedMembers,
@@ -310,7 +322,7 @@ export const removeMembersFromGroup = async (req, res) => {
 
 /* DELETING A PARTICULAR GROUP */
 export const deleteGroup = async (req, res) => {
-    console.log ("Deleting group");
+    console.log("Deleting group");
     try {
         /* CHECK IF USER IS AN ADMIN */
 
@@ -330,21 +342,21 @@ export const deleteGroup = async (req, res) => {
 
         const { userId, username } = req.user;
 
-        const group = await fetchGroupDetailsById (groupId);
+        const group = await fetchGroupDetailsById(groupId);
 
         if (!group) {
             return res.status(404).json({
                 message: 'Group not found'
             });
         }
-           
-        if (!userInGroup (userId, group)) {
+
+        if (!userInGroup(userId, group)) {
             return res.status(403).json({
-               message: 'Access Denied! You are not a member of the group!'
+                message: 'Access Denied! You are not a member of the group!'
             });
         }
-            
-        if (fetchUserRole (userId, group.members) !== 'Admin') {
+
+        if (fetchUserRole(userId, group.members) !== 'Admin') {
             return res.status(403).json({
                 message: 'Access Denied! You are not an admin of the group!'
             });
@@ -360,7 +372,7 @@ export const deleteGroup = async (req, res) => {
             await User.findByIdAndUpdate(member.user, {
                 $pull: { groups: { group: group._id } }
             });
-        }        
+        }
 
         await Group.findByIdAndDelete(groupId);
 
@@ -384,7 +396,7 @@ export const deleteAllGroups = async (req, res) => {
         res.status(200).json({
             message: `${result.deletedCount} group(s) deleted successfully.`
         });
-    } 
+    }
     catch (err) {
         console.error('Error deleting groups:', err);
         res.status(500).json({ message: 'Error deleting groups', error: err.message });

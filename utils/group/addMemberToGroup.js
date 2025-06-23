@@ -2,15 +2,14 @@ import mongoose from "mongoose";
 import User from "../../models/User.js";
 import { fetchUsernameWithUserId } from "../user/fetchUsernameWithUserId.js";
 import { fetchUserIdWithUsername } from "../user/fetchUserIdWithUsername.js";
+import { errorCodes } from "../errors/errorCodes.js";
 
 export const addMemberToGroup = async (username, group) => {
     try {
-        console.log("IN Function");
-        const userId = await fetchUserIdWithUsername (username);
-        console.log ("Username: " + username + " UserID: " + userId);
+        const userId = await fetchUserIdWithUsername(username);
+
         if (!userId) {
-            // console.log ("FAILED with invalid username" + username);
-            return { 
+            return {
                 success: false,
                 message: `User with username '${username}' doesn't exist in the database`
             }
@@ -18,7 +17,7 @@ export const addMemberToGroup = async (username, group) => {
 
         const isAlreadyMember = group.members.some(member => member.username.toString() === username);
         if (isAlreadyMember) {
-            return { 
+            return {
                 success: false,
                 message: `User with username '${username}' is already a member of the group`
             }
@@ -31,9 +30,7 @@ export const addMemberToGroup = async (username, group) => {
             joinedAt: Date.now(),
             status: 'active'
         });
-        console.log (group.members);
 
-        // console.log (group._id + ": " + group.slug);
         await User.findByIdAndUpdate(userId, {
             $addToSet: {
                 groups: {
@@ -41,14 +38,22 @@ export const addMemberToGroup = async (username, group) => {
                     groupSlug: group.slug
                 }
             }
-        });        
+        });
 
-        return { 
+        return {
             success: true,
             message: `User with username '${username}' successfully added to the group`
         };
     }
     catch (err) {
-        return { success: false, message: `An error occurred while adding user with username '${userId}' to the group` };
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while adding member to group',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }

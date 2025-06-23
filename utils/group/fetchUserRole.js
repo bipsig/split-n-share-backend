@@ -1,23 +1,38 @@
+import { errorCodes } from "../errors/errorCodes.js";
+import { errorMessages } from "../errors/errorMessages.js";
+
 export const fetchUserRole = (userId, members) => {
     try {
-        if (!userId || !members ) {
-            console.log ('UserId and members of the group are important')
-            throw new Error('UserId and members of the group are important');
+        if (!userId) {
+            throw new AppError(
+                errorMessages.USER_NOT_FOUND,
+                400,
+                errorCodes.AUTH_USER_NOT_FOUND
+            )
         }
 
-        if (members.length === 0) {
-            console.log ('There are no members in the group')
-            throw new Error('There are no members in the group');
+        if (!members || members.length === 0) {
+            throw new AppError(
+                errorMessages.GROUP_MEMBERS_REQUIRED,
+                400,
+                errorCodes.GROUP_MEMBERS_REQUIRED
+            )
         }
 
         const user = members.find((member) => {
-            return String (member.user) === String(userId)
+            return String(member.user) === String(userId)
         });
-        // console.log (user);
-
         return user.role;
     }
     catch (err) {
-        throw new Error("Unable to fetch User role:", err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Server error while fetching user role',
+            500,
+            errorCodes.SERVER_INTERNAL_ERROR
+        );
     }
 }

@@ -1,15 +1,16 @@
+import { errorCodes } from "../errors/errorCodes.js";
+
 export const addMemberToTransactionMatrix = (username, transactionMatrix) => {
     try {
-        // console.log (transactionMatrix);
         let newInner = {};
         for (const rowKey in transactionMatrix.matrix) {
-            // console.log (rowKey);
+
             transactionMatrix.matrix[rowKey][username] = 0;
-            
-            newInner [rowKey] = 0;
-            // newInner.set(rowKey, 0);
+
+            newInner[rowKey] = 0;
+
         }
-        // newInner.set(username, 0);
+
         newInner[username] = 0;
 
         transactionMatrix.matrix[username] = newInner;
@@ -17,11 +18,17 @@ export const addMemberToTransactionMatrix = (username, transactionMatrix) => {
         transactionMatrix.rowSum[username] = 0;
         transactionMatrix.colSum[username] = 0;
 
-        // console.log("New Inner", newInner); 
         return transactionMatrix;
     }
     catch (err) {
-        console.error('Error adding new user to transaction Matrix', err.message);
-        throw new Error(err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Server error while adding member to transaction matrix',
+            500,
+            errorCodes.SERVER_INTERNAL_ERROR
+        );
     }
 }
