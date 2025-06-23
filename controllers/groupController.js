@@ -280,7 +280,7 @@ export const removeMembersFromGroup = asyncErrorHandler(async (req, res, next) =
             errorCodes.GROUP_NOT_FOUND
         ));
     }
-       
+
     if (!userInGroup(userId, group)) {
         return next(new AppError(
             'Access denied! You are not a member of this group',
@@ -317,7 +317,7 @@ export const removeMembersFromGroup = asyncErrorHandler(async (req, res, next) =
     group.markModified('transactionMatrix.rowSum');
     group.markModified('transactionMatrix.colSum');
     await group.save();
-    
+
     sendSuccess(
         res,
         200,
@@ -331,75 +331,89 @@ export const removeMembersFromGroup = asyncErrorHandler(async (req, res, next) =
     );
 })
 
-/* DELETING A PARTICULAR GROUP */
-export const deleteGroup = async (req, res) => {
-    console.log("Deleting group");
-    try {
-        /* CHECK IF USER IS AN ADMIN */
+/**
+ * Delete a group
+ * @route DELETE /groups/:groupId 
+ * @access Private
+ */
+export const deleteGroup = asyncErrorHandler(async (req, res, next) => {
+    const { groupId } = req.params;
+    const { userId } = req.user;
 
-        /* CHECK IF THE GROUP IS SETTLED */
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+        return next(new AppError(
+            'Invalid group ID format',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
 
-        /* DELETE GROUP FROM GROUPS COLLECTION */
+    const group = await fetchGroupDetailsById(groupId);
 
-        /* 
-        DELETE THE groupId from GROUPS array OF EVERY MEMBER OF THE GROUP
-        PROCESS CAN BE REMOVE EVERY MEMBER FROM THE GROUP (actual implementation ie call the function to do so)
-        THEN DELETE THE GROUP 
-        */
+    if (!group) {
+        return next(new AppError(
+            'Group not found',
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
 
+    if (!userInGroup(userId, group)) {
+        return next(new AppError(
+            'Access denied! You are not a member of this group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
 
-        const { groupId } = req.params;
-        // console.log (groupId);
+    if (fetchUserRole(userId, group.members) !== 'Admin') {
+        return next(new AppError(
+            'Access denied! Only group admins can delete the group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
 
-        const { userId, username } = req.user;
+    if (group.totalBalance !== 0) {
+        return next(new AppError(
+            'Cannot delete group with unsettled balances. Please settle all balances first',
+            400,
+            errorCodes.GROUP_BALANCE_NOT_SETTLED
+        ));
+    }
 
-        const group = await fetchGroupDetailsById(groupId);
-
-        if (!group) {
-            return res.status(404).json({
-                message: 'Group not found'
-            });
-        }
-
-        if (!userInGroup(userId, group)) {
-            return res.status(403).json({
-                message: 'Access Denied! You are not a member of the group!'
-            });
-        }
-
-        if (fetchUserRole(userId, group.members) !== 'Admin') {
-            return res.status(403).json({
-                message: 'Access Denied! You are not an admin of the group!'
-            });
-        }
-
-        if (group.totalBalance !== 0) {
-            return res.status(404).json({
-                message: 'Group balances is not settled. Unable to delete group'
-            });
-        }
-
-        for (let member of group.members) {
-            await User.findByIdAndUpdate(member.user, {
-                $pull: { groups: { group: group._id } }
-            });
-        }
-
-        await Group.findByIdAndDelete(groupId);
-
-        return res.status(200).json({
-            message: 'Group deleted successfully'
+    for (let member of group.members) {
+        await User.findByIdAndUpdate(member.user, {
+            $pull: { groups: { group: group._id } }
         });
-
     }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
 
-export const deleteAllGroups = async (req, res) => {
+    await Group.findByIdAndDelete(groupId);
+
+    sendSuccess(
+        res,
+        200,
+        'Group deleted successfully!'
+    );
+})
+
+/**
+ * Delete all groups (developer only)
+ * @route DELETE /groups/all 
+ * @access Private (Developer only)
+ */
+export const deleteAllGroups = asyncErrorHandler(async (req, res, next) => {
+    const result = await Group.deleteMany({});
+
+    sendSuccess(
+        res,
+        200,
+        `${result.deletedCount} group(s) deleted successfully!`,
+        { deletedCount: result.deletedCount }
+    );
+})
+
+export const deleteAllGroups1 = async (req, res) => {
     try {
         // console.log ("Deleting all groups");
         const result = await Group.deleteMany({});
