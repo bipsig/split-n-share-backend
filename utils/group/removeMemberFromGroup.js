@@ -6,16 +6,15 @@ export const removeMemberFromGroup = async (username, group) => {
     try {
         const userId = await fetchUserIdWithUsername(username);
         if (!userId) {
-            // console.log ("FAILED with invalid username" + username);
-            return { 
+            return {
                 success: false,
                 message: `User with username '${username}' doesn't exist in the database`
             }
         }
 
         if (!mongoose.Types.ObjectId.isValid(userId)) {
-            return { 
-                success: false, 
+            return {
+                success: false,
                 message: `Invalid user ID: ${userId}`
             };
         }
@@ -23,18 +22,18 @@ export const removeMemberFromGroup = async (username, group) => {
         const index = group.members.findIndex((member) => member.username.toString() === username);
 
         if (index === -1) {
-            return { 
+            return {
                 success: false,
                 message: `User with username '${username}' is not a member of the group`
             }
         }
 
-        group.members.splice (index, 1);
+        group.members.splice(index, 1);
 
         await User.findByIdAndUpdate(userId, {
             $pull: { groups: { group: group._id } }
         });
-        
+
 
         return {
             success: true,
@@ -42,6 +41,14 @@ export const removeMemberFromGroup = async (username, group) => {
         };
     }
     catch (err) {
-        return { success: false, message: `An error occurred while removing user ${username} from the group` };
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while removing member from group',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }

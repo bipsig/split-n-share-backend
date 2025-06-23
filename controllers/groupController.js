@@ -244,81 +244,92 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* REMOVING MEMBERS FROM A GROUP */
-export const removeMembersFromGroup = async (req, res) => {
-    console.log('Removing members from a group');
-    try {
-        /* 
-        1. CHECK WHETHER USER BELONGS TO THE GROUP
-        2. CHECK WHETHER USER IS AN ADMIN IN AN GROUP
-        3. REMOVE THE MEMBERS FROM THE members ARRAY OF THE GROUP
-        4. REMOVE THE groupId FROM THE groups ARRAY OF EVERY USER INDIVIDUALLY
-        */
+/**
+ * 
+ * @route DELETE /groups/:groupId/members 
+ * @param {*} res 
+ * @returns 
+ */
+export const removeMembersFromGroup = asyncErrorHandler(async (req, res, next) => {
+    const { groupId } = req.params;
+    const { userId } = req.user;
+    const { removeMembers } = req.body;
 
-        const { groupId } = req.params;
-        const { userId, username } = req.user;
-        const { removeMembers } = req.body;
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+        return next(new AppError(
+            'Invalid group ID format',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
 
-        const group = await fetchGroupDetailsById(groupId);
+    if (!removeMembers || !Array.isArray(removeMembers) || removeMembers.length === 0) {
+        return next(new AppError(
+            'Remove members array is required and cannot be empty',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
 
-        if (!group) {
-            return res.status(404).json({
-                message: 'Group not found'
-            });
-        }
+    const group = await fetchGroupDetailsById(groupId);
 
-        if (!userInGroup(userId, group)) {
-            return res.status(403).json({
-                message: 'Access Denied! You are not a member of the group!'
-            });
-        }
+    if (!group) {
+        return next(new AppError(
+            'Group not found',
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
+       
+    if (!userInGroup(userId, group)) {
+        return next(new AppError(
+            'Access denied! You are not a member of this group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
 
-        if (fetchUserRole(userId, group.members) !== 'Admin') {
-            return res.status(403).json({
-                message: 'Access Denied! You are not an admin of the group!'
-            });
-        }
+    if (fetchUserRole(userId, group.members) !== 'Admin') {
+        return next(new AppError(
+            'Access denied! Only group admins can remove members',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
 
-        const responses = [];
-        for (let user_name of removeMembers) {
-            const response = await removeMemberFromGroup(user_name, group);
-            // const response = await removeMemberFromGroup(userId, group);
-            responses.push({
-                username: user_name,
-                // userId: userId,
-                ...response
-            });
-        }
-
-        // console.log (responses);
-        const removedMembers = responses.filter((response) => response.success).map((response) => response.username);
-        const failedMembers = responses.filter((response) => !response.success);
-
-        for (let memberUsername of removedMembers) {
-            // const memberUsername = await fetchUsernameWithUserId(member);
-            // console.log(memberUsername);
-            group.transactionMatrix = removeMemberFromTransactionMatrix(memberUsername, group.transactionMatrix);
-        }
-
-        console.log(group.transactionMatrix);
-        group.markModified('transactionMatrix.matrix');
-        group.markModified('transactionMatrix.rowSum');
-        group.markModified('transactionMatrix.colSum');
-        await group.save();
-
-        return res.status(201).json({
-            message: 'Members removed successfully!',
-            removedMembers,
-            failedMembers
+    const responses = [];
+    for (let user_name of removeMembers) {
+        const response = await removeMemberFromGroup(user_name, group);
+        responses.push({
+            username: user_name,
+            ...response
         });
+    }
 
+    const removedMembers = responses.filter((response) => response.success).map((response) => response.username);
+    const failedMembers = responses.filter((response) => !response.success);
+
+    for (let memberUsername of removedMembers) {
+        group.transactionMatrix = removeMemberFromTransactionMatrix(memberUsername, group.transactionMatrix);
     }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
+
+    group.markModified('transactionMatrix.matrix');
+    group.markModified('transactionMatrix.rowSum');
+    group.markModified('transactionMatrix.colSum');
+    await group.save();
+    
+    sendSuccess(
+        res,
+        200,
+        `Successfully removed ${removedMembers.length} member(s) from the group!`,
+        {
+            removedMembers,
+            failedMembers,
+            removedCount: removedMembers.length,
+            failedCount: failedMembers.length
+        }
+    );
+})
 
 /* DELETING A PARTICULAR GROUP */
 export const deleteGroup = async (req, res) => {
