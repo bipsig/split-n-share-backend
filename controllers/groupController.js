@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import Group from "../models/Group.js";
 import User from "../models/User.js";
+import { asyncErrorHandler } from "../utils/errors/asyncErrorHandler.js";
 import { fetchGroupDetailsById } from "../utils/group/fetchGroupDetailsById.js";
 import { fetchGroupsByUsername } from "../utils/group/fetchGroupsByUsername.js";
 import { fetchUserRole } from "../utils/group/fetchUserRole.js";
@@ -11,35 +12,46 @@ import { generateGroupSlug } from "../utils/group/generateGroupSlug.js";
 import { addMemberToTransactionMatrix } from "../utils/transactionMatrix/addMemberToTransactionMatrix.js";
 import { fetchUsernameWithUserId } from "../utils/user/fetchUsernameWithUserId.js";
 import { removeMemberFromTransactionMatrix } from "../utils/transactionMatrix/removeMemberFromTransactionMatrix.js";
+import { AppError } from "../utils/errors/appError.js";
+import { errorCodes } from "../utils/errors/errorCodes.js";
+import { sendSuccess } from "../utils/errors/responseHandler.js";
+import { errorMessages } from "../utils/errors/errorMessages.js";
 
-/* CREATING A NEW GROUP BY LOGGED IN USER */
-export const createGroup = async (req, res) => {
-    console.log (`Creation of group being performed by user ${req.user.username}`);
-    try {
-        // console.log (req.body);
-        const { name, description, currency, category } = req.body;
+/**
+ * 
+ * @route POST /groups 
+ * @access Private
+ */
+export const createGroup = asyncErrorHandler(async (req, res, next) => {
+    const { name, description, currency, category } = req.body;
 
-        // Validation Check if name is missing from the body
-        if (!name) {
-            return res.status(400).json({
-                message: 'Group name is required'
-            });
-        }
+    if (!name || !name.trim()) {
+        return next(new AppError(
+            'Group name us required',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
 
-        // Find the current user model from the database (logged in user)
-        const currentUser = await User.findOne ({
-            username: req.user.username
-        });
+    const currentUser = await User.findOne({
+        username: req.user.username
+    });
 
-        const slug = generateGroupSlug(name);
+    if (!currentUser) {
+        return next (new AppError(
+            'User not found',
+            404,
+            errorCodes.AUTH_USER_NOT_FOUND
+        ));
+    }
 
-        const username = req.user.username;
-        const matrix = {};
+    const slug = generateGroupSlug(name);
+    const username = req.user.username;
+
+    const matrix = {};
         const innerMatrix = {};
         innerMatrix[username] = 0;
         matrix [username] = innerMatrix;
-
-        // console.log (matrix);
 
         const rowSum = {};
         rowSum[username] = 0;
@@ -53,12 +65,10 @@ export const createGroup = async (req, res) => {
             colSum
         };
 
-
-        // Creation of Group Model
         const group = new Group ({
-            name,
+            name: name.trim(),
             slug,
-            description,
+            description: description.trim(),
             currency: currency || 'INR',
             category: category|| 'Other',
             createdBy: currentUser._id,
@@ -71,28 +81,21 @@ export const createGroup = async (req, res) => {
             transactionMatrix
         });
 
-        // console.log (group);
         const savedGroup = await group.save();
-        
-        // Pushing the group ID to the groups array of the current user
+
         currentUser.groups.push({
             group: savedGroup._id,
             groupSlug: savedGroup.slug
         });
         await currentUser.save();
 
-
-        return res.status(201).json({
-            message: "New Group created successfully",
-            savedGroup
-        })
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
+        sendSuccess(
+            res,
+            201,
+            errorMessages.GROUP_CREATED_SUCCESS,
+            { group: savedGroup }
+        );
+})
 
 /* FETCHING ALL THE GROUPS USER IS A PART OF */
 export const fetchGroups = async (req, res) => {
