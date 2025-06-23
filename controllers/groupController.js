@@ -18,7 +18,7 @@ import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 
 /**
- * 
+ * Create a new group
  * @route POST /groups 
  * @access Private
  */
@@ -97,23 +97,24 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
         );
 })
 
-/* FETCHING ALL THE GROUPS USER IS A PART OF */
-export const fetchGroups = async (req, res) => {
-    console.log (`Fetching the groups the user '${req.user.username} belongs to...`);
-    try {
-        const groups = await fetchGroupsByUsername(req.user.username);
-        // console.log(groups);
+/**
+ * Fetch all groups user is a part of.
+ * @route GET /groups 
+ * @access Private
+ */
+export const fetchGroups = asyncErrorHandler(async (req, res, next) => {
+    const groups = await fetchGroupsByUsername(req.user.username);
 
-        res.status(200).json({
+    sendSuccess(
+        res,
+        200,
+        `Retrieved ${groups.length} group(s) successfully!`,
+        {
+            count: groups.length,
             groups
-        });
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
+        } 
+    );
+})
 
 /* FETCHING DETAILS OF A PARTICULAR GROUP */
 export const fetchGroupDetails = async (req, res) => {
