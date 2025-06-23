@@ -116,43 +116,47 @@ export const fetchGroups = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* FETCHING DETAILS OF A PARTICULAR GROUP */
-export const fetchGroupDetails = async (req, res) => {
-    console.log ('Fetching particular group details');
-    try {
-        const { groupId } = req.params;
-        // console.log (groupId);
+/**
+ * Fetch Details of a Particular Group
+ * @route GET /groups/:groupId
+ * @access Private
+ */
+export const fetchGroupDetails = asyncErrorHandler(async (req, res, next) => {
+    const { groupId } = req.params;
+    const { userId } = req.user;
 
-        const { userId, username } = req.user;
-        // console.log (username);
-        
-        const group = await fetchGroupDetailsById (groupId);
-        if (!group) {
-            return res.status(404).json({
-                message: 'Group not found'
-            });
-        }
-
-        if (!userInGroup (userId, group)) {
-            return res.status(403).json({
-                message: 'Access Denied! You are not a member of the group!'
-            });
-        }
-
-
-        // console.log (group);
-
-        return res.status(200).json({
-            message: "Group fetched successfully",
-            group
-        })
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+        return next(new AppError(
+            'Invalid group ID format',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
     }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
+
+    const group = await fetchGroupDetailsById(groupId);
+    if (!group) {
+        return next(new AppError(
+            'Group not found',
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
     }
-}
+
+    if (!userInGroup(userId, group)) {
+        return next(new AppError(
+            'Access denied! You are not a member of this group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
+
+    sendSuccess(
+        res,
+        200,
+        'Group details retrieved successfully!',
+        { group }
+    );
+})
 
 /* ADDING MEMBERS TO A GROUP */
 export const addMembersToGroup = async (req, res) => {

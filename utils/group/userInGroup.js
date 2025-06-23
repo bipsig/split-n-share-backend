@@ -1,21 +1,34 @@
 import User from "../../models/User.js";
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
+import { errorMessages } from "../errors/errorMessages.js";
 
 export const userInGroup = (userId, group) => {
     try {
         if (!userId || !group) {
-            throw new Error('UserId and group is necessary!');
+            throw new AppError(
+                errorMessages.GROUP_NAME_REQUIRED,
+                400,
+                errorCodes.GROUP_NAME_REQUIRED
+            )
         }
+
         const members = group.members;
 
-        let tmp = members.filter ((member) => {
+        let tmp = members.filter((member) => {
             return member.user == userId
         });
-
-        // console.log (tmp);
         return tmp.length > 0;
-        
     }
     catch (err) {
-        throw new Error ('Unable to check whether user is in the group: ', err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Server error while updating user with username',
+            500,
+            errorCodes.SERVER_INTERNAL_ERROR
+        );
     }
 }
