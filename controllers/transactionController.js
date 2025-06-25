@@ -263,49 +263,6 @@ export const fetchTransactionDetails = asyncErrorHandler(async (req, res, next) 
 export const deleteTransaction = asyncErrorHandler(async (req, res, next) => {
     const { transactionId } = req.params;
 
-    // const transaction = await fetchTransactionDetailsById(transactionId);
-    // if (!transaction) {
-    //     return next(new AppError(
-    //         'Transaction not found',
-    //         404,
-    //         errorCodes.TRANSACTION_NOT_FOUND
-    //     ));
-    // }
-
-    // const group = await fetchGroupDetailsById(transaction.groupId);
-    // if (!group) {
-    //     return next(new AppError(
-    //         errorMessages.GROUP_NOT_FOUND,
-    //         404,
-    //         errorCodes.GROUP_NOT_FOUND
-    //     ));
-    // }
-
-    // if (!userInGroup(req.user.userId, group)) {
-    //     return next(new AppError(
-    //         errorMessages.GROUP_ACCESS_DENIED,
-    //         403,
-    //         errorCodes.GROUP_ACCESS_DENIED
-    //     ));
-    // }
-
-    // const users = transaction.users_involved;
-    // await deleteTransactionFromUsers(transactionId, users);
-
-    // group.transactions = group.transactions.filter((t) => {
-    //     return t.transaction.toString() !== transactionId.toString();
-    // });
-
-    // group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(
-    //     group.transactionMatrix, 
-    //     transaction
-    // );
-
-    // group.markModified('transactionMatrix.matrix');
-    // group.markModified('transactionMatrix.rowSum');
-    // group.markModified('transactionMatrix.colSum');
-    // await group.save();
-
     await deleteSingleTransaction(req, transactionId);
 
     await Transaction.findByIdAndDelete(transactionId);
@@ -317,7 +274,22 @@ export const deleteTransaction = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-export const deleteAllTransactions = async (req, res) => {
+/**
+ * Delete all transactions
+ * @route DELETE /transactions/all
+ * @access Private (Deeloper only)
+ */
+export const deleteAllTransactions = asyncErrorHandler(async (req, res, next) => {
+    const result = await Transaction.deleteMany({});
+
+    sendSuccess(
+        res,
+        200,
+        `${result.deletedCount} transaction(s) deleted successfully`
+    );
+})
+
+export const deleteAllTransactions1 = async (req, res) => {
     try {
         // console.log ("Deleting all groups");
         const result = await Transaction.deleteMany({});
