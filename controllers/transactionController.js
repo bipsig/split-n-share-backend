@@ -98,7 +98,7 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     let finalUsers = [];
 
     for (let user of users_involved) {
-        const userId = (await fetchUserIdWithUsername(user.user)).toString();
+        const userId = await fetchUserIdWithUsername(user.user);
         if (!userInGroup(userId, group)) {
             return next(new AppError(
                 `User ${user.user} is not a member of this group`,
