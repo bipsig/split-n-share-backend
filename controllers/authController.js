@@ -16,8 +16,6 @@ import { sendSuccess } from "../utils/errors/responseHandler.js";
  * @access Public 
  */
 export const register = asyncErrorHandler(async (req, res, next) => {
-    console.log (`Registering a user`);
-
     const userData = req.body;
     
     const existingUser = await User.findOne({
@@ -84,8 +82,6 @@ export const register = asyncErrorHandler(async (req, res, next) => {
  */
 
 export const login = asyncErrorHandler(async (req, res, next) => {
-    console.log (`Logging in a user`);
-
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -149,8 +145,6 @@ export const login = asyncErrorHandler(async (req, res, next) => {
  */
 
 export const logout = asyncErrorHandler(async (req, res, next) => {
-    console.log ('Logging out an user');
-
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -180,8 +174,6 @@ export const logout = asyncErrorHandler(async (req, res, next) => {
  */
 
 export const cleanup = asyncErrorHandler(async (req, res, next) => {
-    console.log ('Clearing the expired tokens');
-
     const currentDate = new Date();
 
     const result = await Blacklist.deleteMany({

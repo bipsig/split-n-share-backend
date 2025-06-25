@@ -11,164 +11,170 @@ import { deleteTransactionFromUsers } from "../utils/transaction/deleteTransacti
 import { addTransactionToTransactionMatrix } from "../utils/transactionMatrix/addTransactionToTransactionMatrix.js";
 import { deleteTrnasactionFromTransactionMatrix } from "../utils/transactionMatrix/deleteTransactionFromTransactionMatrix.js";
 import { fetchUserIdWithUsername } from "../utils/user/fetchUserIdWithUsername.js";
+import { asyncErrorHandler } from "../utils/errors/asyncErrorHandler.js";
+import { AppError } from "../utils/errors/appError.js";
+import { errorCodes } from "../utils/errors/errorCodes.js";
+import { errorMessages } from "../utils/errors/errorMessages.js";
+import { sendSuccess } from "../utils/errors/responseHandler.js";
 
-/* CREATING A NEW TRANSACTION BY LOGGED IN USER */
-export const createTransaction = async (req, res) => {
-    console.log(`Creation of a new transaction by user ${req.user.username}`);
-    try {
-        // console.log(req.body);
-        // console.log(req.user);
-        /*
-        VALDIATION CHECKS REQUIRED and FLOW OF THE CONTROLLER:
-            1. Check whether logged in user belongs to the group or not.
-            2. Validate whether groupId exists or not.  
-            3. If group exists fetch the group.
-            4. Validate user_paid => user exists and member of the group
-            5. Validate users_involved => Loop through the array of users_involved and check whether each user is valid and member of group or not
-            6. Share total should be equal to 1.
-            
-            If any of the validation checks fail, return error status code.
+/**
+ * Create a new transaction
+ * @route POST /transactions 
+ * @access Private
+ */
+export const createTransaction = asyncErrorHandler(async (req, res, next) => {
+    const { amount, user_paid, users_involved, groupId, description, type } = req.body;
 
-            7. Create transaction Document
-            8. Add transaction details to that group (in the transaction array)
-            9. Add transaction details to every user (in the transaction array)
-        */
+    if (!amount) {
+        return next(new AppError(
+            'Amount is required',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
 
+    if (!user_paid) {
+        return next(new AppError(
+            'User Paid is required',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
 
-        const { amount, user_paid, users_involved, groupId, description, type } = req.body;
-        // console.log (req.user.userId);
-        // console.log (groupId);
-        
-        const group = await fetchGroupDetailsById(groupId);
-        if (!group) {
-            return res.status(404).json({
-                message: 'Invalid Group ID'
-            });
+    if (!users_involved) {
+        return next(new AppError(
+            'Users involved are required',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
+
+    if (!groupId) {
+        return next(new AppError(
+            'Group details is required',
+            400,
+            errorCodes.VALIDATION_REQUIRED_FIELD
+        ));
+    }
+
+    if (parseFloat(amount) <= 0) {
+        return next(new AppError(
+            'Amount must be greater than 0',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
+
+    
+    const group = await fetchGroupDetailsById(groupId);
+    if (!group) {
+        return next(new AppError(
+            errorMessages.GROUP_NOT_FOUND,
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
+    
+    // console.log("Checking Logged In user");
+    if (!userInGroup(req.user.userId, group)) {
+        return next(new AppError(
+            errorMessages.GROUP_ACCESS_DENIED,
+            403,
+            errorCodes.GROUP_ACCESS_DENIED
+        ));
+    }
+    
+    const userPaidId = await fetchUserIdWithUsername(user_paid);
+
+    if (!userInGroup(userPaidId, group)) {
+        return next(new AppError(
+            'The user who paid is not a member of this group',
+            400,
+            errorCodes.GROUP_INVALID_MEMBER
+        ));
+    }
+
+    let totalShare = 0;
+    let finalUsers = [];
+
+    for (let user of users_involved) {
+        const userId = (await fetchUserIdWithUsername(user.user)).toString();
+        if (!userInGroup(userId, group)) {
+            return next(new AppError(
+                `User ${user.user} is not a member of this group`,
+                400,
+                errorCodes.GROUP_INVALID_MEMBER
+            ));
         }
-        
-        if (!userInGroup(req.user.userId, group)) {
-            return res.status(404).json({
-                message: `Logged in user doesn't belong to this particular group`
-            });
-        }
-
-        if (parseFloat(amount) <= 0) {
-            return res.status(404).json({
-                message: 'Amount should be more than 0'
-            });
-        }
-
-        // console.log (group);
-
-        // const result = userInGroup(user_paid, group);
-        // console.log (result);
-        const userPaidId = (await fetchUserIdWithUsername(user_paid)).toString();
-        console.log (userPaidId);
-        if (!userInGroup(userPaidId, group)) {
-            return res.status(404).json({
-                message: `User paid doesn't belong to this particular group`
-            });
-        }
-        // const userPaidUsername = await fetchUsernameWithUserId(user_paid);
-        // console.log ("Reached here");
-
-        // console.log (users_involved);
-        let totalShare = 0;
-        let finalUsers = [];
-        for (let user of users_involved) {
-            // console.log(user);
-            const userId = (await fetchUserIdWithUsername(user.user)).toString();
-            if (!userInGroup(userId, group)) {
-                return res.status(404).json({
-                    message: `User with userId ${user.user} doesn't belong to this group`
-                });
-            }
-            totalShare += user.share;
-            // const username = await fetchUsernameWithUserId(user.user);
-            finalUsers.push({
-                user: userId,
-                username: user.user,
-                share: user.share
-            });
-        }
-        // console.log ("FInal Users: ");
-        // console.log (finalUsers);
-
-        if (parseFloat(totalShare) !== 1.0) {
-            return res.status(404).json({
-                message: `Total share of the transaction is not equal to 1.`
-            });
-        }
-
-        // console.log ("Reached here");
-        const slug = generateTransactionSlug(description);
-        // console.log (slug);
-
-
-        const transaction = new Transaction({
-            user_added: { userId: req.user.userId, username: req.user.username },
-            description,
-            slug,
-            amount,
-            user_paid: { userId: userPaidId, username: user_paid },
-            users_involved: finalUsers,
-            groupId,
-            type,
-            groupSlug: group.slug
+        totalShare += user.share;
+        finalUsers.push({
+            user: userId,
+            username: user.user,
+            share: user.share
         });
-        // console.log (transaction);
+    }
 
-        const result = await transaction.save();
+    if (parseFloat(totalShare) !== 1.0) {
+        return next(new AppError(
+            'Total share of all users must equal 1.0',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
 
-        // // console.log (transaction);
+    const slug = generateTransactionSlug(description);
 
-        // // console.log (group);
-        group.transactions.push({
+    const transaction = new Transaction({
+        user_added: { userId: req.user.userId, username: req.user.username },
+        description,
+        slug,
+        amount,
+        user_paid: { userId: userPaidId, username: user_paid },
+        users_involved: finalUsers,
+        groupId,
+        type,
+        groupSlug: group.slug
+    });
+
+    const result = await transaction.save();
+
+     group.transactions.push({
+        transaction: result._id,
+        transactionSlug: slug
+    });
+
+    group.transactionMatrix = addTransactionToTransactionMatrix(
+        group.transactionMatrix, 
+        user_paid, 
+        finalUsers, 
+        amount
+    );
+
+    for (let user of finalUsers) {
+        const currentUser = await User.findById(user.user);
+        currentUser.transactions.push({
             transaction: result._id,
             transactionSlug: slug
         });
-
-        // console.log ("Initial group");
-        // console.log (group.transactionMatrix);
-
-        group.transactionMatrix = addTransactionToTransactionMatrix(group.transactionMatrix, user_paid, finalUsers, amount);
-        
-
-        for (let user of finalUsers) {
-            const currentUser = await User.findById(user.user);
-            // console.log(currentUser);
-            currentUser.transactions.push({
-                transaction: result._id,
-                transactionSlug: slug
-            });
-            // console.log(currentUser);
-
-            await currentUser.save();
-        }
-
-        console.log ("New group");
-        console.log (group.transactionMatrix);
-        group.markModified('transactionMatrix.matrix');
-        group.markModified('transactionMatrix.rowSum');
-        group.markModified('transactionMatrix.colSum');
-        await group.save();
-
-        return res.status(201).json({
-            message: "New Transaction created successfully",
-            result
-        });
-
+        await currentUser.save();
     }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
+
+    group.markModified('transactionMatrix.matrix');
+    group.markModified('transactionMatrix.rowSum');
+    group.markModified('transactionMatrix.colSum');
+    await group.save();
+
+    sendSuccess(
+        res,
+        201,
+        'Transaction created successfully!',
+        { transaction: result }
+    );
+})
 
 /* FETCHING ALL TRANSACTIONS OF A PARTICULAR GROUP */
 export const fetchTransactionsOfAGroup = async (req, res) => {
-    console.log (`Fetching details of group with groupId ${req.params.groupId}`);
+    console.log(`Fetching details of group with groupId ${req.params.groupId}`);
     try {
         const { groupId } = req.params;
 
@@ -191,7 +197,7 @@ export const fetchTransactionsOfAGroup = async (req, res) => {
             transactions
         })
     }
-    catch(err) {
+    catch (err) {
         return res.status(500).json({
             error: err.message
         })
@@ -200,12 +206,12 @@ export const fetchTransactionsOfAGroup = async (req, res) => {
 
 /* FETCHING DETAILS OF A PARTICULAR TRANSACTION */
 export const fetchTransactionDetails = async (req, res) => {
-    console.log (`Fetching details of a particular transaction`);
+    console.log(`Fetching details of a particular transaction`);
     try {
         const { transactionId } = req.params;
         // console.log (transactionId);
 
-        const transaction = await fetchTransactionDetailsById (transactionId);
+        const transaction = await fetchTransactionDetailsById(transactionId);
         // console.log (transaction);
         if (!transaction) {
             return res.status(404).json({
@@ -213,7 +219,7 @@ export const fetchTransactionDetails = async (req, res) => {
             });
         }
 
-        const group = await fetchGroupDetailsById (transaction.groupId);
+        const group = await fetchGroupDetailsById(transaction.groupId);
         if (!group) {
             return res.status(404).json({
                 message: 'Group not found'
@@ -241,7 +247,7 @@ export const fetchTransactionDetails = async (req, res) => {
 
 /* DELETE A PARTICULAR TRANSACTION */
 export const deleteTransaction = async (req, res) => {
-    console.log ("Deleting a particular transaction");
+    console.log("Deleting a particular transaction");
     try {
         /*
             1. Check if transaction exists or not.
@@ -252,54 +258,54 @@ export const deleteTransaction = async (req, res) => {
             6. Delete the transaction.
         */
 
-            const { transactionId } = req.params;
-    
-            const transaction = await fetchTransactionDetailsById (transactionId);
+        const { transactionId } = req.params;
 
-            if (!transaction) {
-                return res.status(404).json({
-                    message: 'Transaction not found'
-                });
-            }
-    
-            const group = await fetchGroupDetailsById (transaction.groupId);
-            if (!group) {
-                return res.status(404).json({
-                    message: 'Group not found'
-                });
-            }
-    
-            if (!userInGroup(req.user.userId, group)) {
-                return res.status(404).json({
-                    message: `Logged in user doesn't belong to the group the transaction is part of. ACCESS DENIED`
-                });
-            }
-            
-            // console.log (transaction.users_involved);
-            const users = transaction.users_involved;
-            await deleteTransactionFromUsers(transactionId, users);
+        const transaction = await fetchTransactionDetailsById(transactionId);
 
-            // console.log (group);
-            group.transactions = group.transactions.filter((t) => {
-                return t.transaction.toString() !== transactionId.toString();
-            })
-
-            // console.log ("Initially");
-            // console.log (group.transactionMatrix);
-            group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(group.transactionMatrix, transaction);
-            // console.log ("Finally");
-            // console.log (group.transactionMatrix);
-            
-            group.markModified('transactionMatrix.matrix');
-            group.markModified('transactionMatrix.rowSum');
-            group.markModified('transactionMatrix.colSum');
-            await group.save();
-
-            await Transaction.findByIdAndDelete(transactionId);
-
-            return res.status(200).json({
-                message: 'Transaction deleted successfully'
+        if (!transaction) {
+            return res.status(404).json({
+                message: 'Transaction not found'
             });
+        }
+
+        const group = await fetchGroupDetailsById(transaction.groupId);
+        if (!group) {
+            return res.status(404).json({
+                message: 'Group not found'
+            });
+        }
+
+        if (!userInGroup(req.user.userId, group)) {
+            return res.status(404).json({
+                message: `Logged in user doesn't belong to the group the transaction is part of. ACCESS DENIED`
+            });
+        }
+
+        // console.log (transaction.users_involved);
+        const users = transaction.users_involved;
+        await deleteTransactionFromUsers(transactionId, users);
+
+        // console.log (group);
+        group.transactions = group.transactions.filter((t) => {
+            return t.transaction.toString() !== transactionId.toString();
+        })
+
+        // console.log ("Initially");
+        // console.log (group.transactionMatrix);
+        group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(group.transactionMatrix, transaction);
+        // console.log ("Finally");
+        // console.log (group.transactionMatrix);
+
+        group.markModified('transactionMatrix.matrix');
+        group.markModified('transactionMatrix.rowSum');
+        group.markModified('transactionMatrix.colSum');
+        await group.save();
+
+        await Transaction.findByIdAndDelete(transactionId);
+
+        return res.status(200).json({
+            message: 'Transaction deleted successfully'
+        });
     }
     catch (err) {
         return res.status(500).json({
@@ -316,7 +322,7 @@ export const deleteAllTransactions = async (req, res) => {
         res.status(200).json({
             message: `${result.deletedCount} transaction(s) deleted successfully.`
         });
-    } 
+    }
     catch (err) {
         console.error('Error deleting transactions:', err);
         res.status(500).json({ message: 'Error deleting transactions', error: err.message });

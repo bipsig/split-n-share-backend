@@ -8,7 +8,7 @@ export const fetchUserIdWithUsername = async (username) => {
             username: username
         }).select('_id');
 
-        return userId ? userId : null;
+        return userId ? userId._id : null;
     }
     catch (err) {
         if (err instanceof AppError) {

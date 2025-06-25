@@ -50,7 +50,7 @@ app.get(`/api/${process.env.VERSION}/sync`, async (req, res) => {
     }
 });
 
-app.get(`/api/${process.env.VERSION}`, async (req, res) => {
+app.post(`/api/${process.env.VERSION}`, async (req, res) => {
     try {
         const userData = users;
 
