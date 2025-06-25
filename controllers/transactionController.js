@@ -172,37 +172,43 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     );
 })
 
-/* FETCHING ALL TRANSACTIONS OF A PARTICULAR GROUP */
-export const fetchTransactionsOfAGroup = async (req, res) => {
-    console.log(`Fetching details of group with groupId ${req.params.groupId}`);
-    try {
-        const { groupId } = req.params;
+/**
+ * Get all transactions related to a particulare group
+ * @route GET /transactions/groups/:groupId 
+ * @access Private
+ */
+export const fetchTransactionsOfAGroup = asyncErrorHandler(async (req, res, next) => {
+    const { groupId } = req.params;
 
-        /*
-            1. Check if group exists or not.
-            2. Check if the logged in user is a member of the group or not
-        */
+    const group = await fetchGroupDetailsById(groupId);
+    if (!group) {
+        return next(new AppError(
+            errorMessages.GROUP_NOT_FOUND,
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
 
-        const group = await fetchGroupDetailsById(groupId);
-        // console.log (group);
+    if (!userInGroup(req.user.userId, group)) {
+        return next(new AppError(
+            errorMessages.GROUP_ACCESS_DENIED,
+            403,
+            errorCodes.GROUP_ACCESS_DENIED
+        ));
+    }
 
-        if (!userInGroup(req.user.userId, group)) {
-            return res.status(404).json({
-                message: `Logged in user doesn't belong to this particular group`
-            });
-        }
+    const transactions = group.transactions;
 
-        const transactions = group.transactions;
-        res.status(200).json({
+    sendSuccess(
+        res,
+        200,
+        `Retrieved ${transactions.length} transaction(s) for the group`,
+        {
+            count: transactions.length,
             transactions
-        })
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
+        }
+    );
+})
 
 /* FETCHING DETAILS OF A PARTICULAR TRANSACTION */
 export const fetchTransactionDetails = async (req, res) => {
