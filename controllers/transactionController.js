@@ -197,6 +197,8 @@ export const fetchTransactionsOfAGroup = asyncErrorHandler(async (req, res, next
         ));
     }
 
+    console.log (group);
+
     const transactions = group.transactions;
 
     sendSuccess(
@@ -210,46 +212,47 @@ export const fetchTransactionsOfAGroup = asyncErrorHandler(async (req, res, next
     );
 })
 
-/* FETCHING DETAILS OF A PARTICULAR TRANSACTION */
-export const fetchTransactionDetails = async (req, res) => {
-    console.log(`Fetching details of a particular transaction`);
-    try {
-        const { transactionId } = req.params;
-        // console.log (transactionId);
+/**
+ * Get details of a particular Transaction
+ * @route GET /transactions/:transactionId 
+ * @access Private
+ */
+export const fetchTransactionDetails = asyncErrorHandler(async (req, res, next) => {
+    const { transactionId } = req.params;
 
-        const transaction = await fetchTransactionDetailsById(transactionId);
-        // console.log (transaction);
-        if (!transaction) {
-            return res.status(404).json({
-                message: 'Transaction not found'
-            });
-        }
-
-        const group = await fetchGroupDetailsById(transaction.groupId);
-        if (!group) {
-            return res.status(404).json({
-                message: 'Group not found'
-            });
-        }
-        // console.log (group);
-
-        if (!userInGroup(req.user.userId, group)) {
-            return res.status(404).json({
-                message: `Logged in user doesn't belong to the group the transaction is part of. ACCESS DENIED`
-            });
-        }
-
-        res.status(200).json({
-            message: "Transaction details fetched successfully",
-            transaction
-        })
+    const transaction = await fetchTransactionDetailsById(transactionId);
+    if (!transaction) {
+        return next(new AppError(
+            'Transaction not found',
+            404,
+            errorCodes.TRANSACTION_NOT_FOUND
+        ));
     }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
+
+    const group = await fetchGroupDetailsById(transaction.groupId);
+    if (!group) {
+        return next(new AppError(
+            errorMessages.GROUP_NOT_FOUND,
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
     }
-}
+
+    if (!userInGroup(req.user.userId, group)) {
+        return next(new AppError(
+            errorMessages.GROUP_ACCESS_DENIED,
+            403,
+            errorCodes.GROUP_ACCESS_DENIED
+        ));
+    }
+
+    sendSuccess(
+        res,
+        200,
+        'Transaction details retrieved successfully!',
+        { transaction }
+    );
+})
 
 /* DELETE A PARTICULAR TRANSACTION */
 export const deleteTransaction = async (req, res) => {

@@ -76,6 +76,7 @@ const groupSchema = new mongoose.Schema(
         },
         transactions: [
             {
+                _id: false,
                 transaction: {
                     type: mongoose.Schema.Types.ObjectId,
                     ref: 'Transaction',
