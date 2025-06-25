@@ -1,13 +1,10 @@
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
+
 export const addTransactionToTransactionMatrix = (transactionMatrix, user_paid, users_involved, amount) => {
     try {
-        console.log ("Inside Function");
-
-        // console.log (user_paid);
-        // console.log (users_involved);
-
         for (let user of users_involved) {
-            // console.log (user);
-            const share = parseFloat(amount)*(parseFloat(user.share));
+            const share = parseFloat(amount) * (parseFloat(user.share));
             transactionMatrix.matrix[user_paid][user.username] += share;
 
             transactionMatrix.colSum[user.username] += share;
@@ -18,7 +15,14 @@ export const addTransactionToTransactionMatrix = (transactionMatrix, user_paid, 
         return transactionMatrix;
     }
     catch (err) {
-        console.error('Error adding transaction to transaction Matrix', err.message);
-        throw new Error(err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Server error while adding transaction to transaction matrix',
+            500,
+            errorCodes.SERVER_INTERNAL_ERROR
+        );
     }
 }

@@ -1,3 +1,6 @@
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
+
 export const removeMemberFromTransactionMatrix = (username, transactionMatrix) => {
     try {
         delete transactionMatrix.matrix[username];
@@ -30,7 +33,14 @@ export const removeMemberFromTransactionMatrix = (username, transactionMatrix) =
         return transactionMatrix;
     }
     catch (err) {
-        console.error('Error adding new user to transaction Matrix', err.message);
-        throw new Error(err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Server error while removing member from transaction matrix',
+            500,
+            errorCodes.SERVER_INTERNAL_ERROR
+        );
     }
 }

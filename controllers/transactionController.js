@@ -254,8 +254,68 @@ export const fetchTransactionDetails = asyncErrorHandler(async (req, res, next) 
     );
 })
 
+/**
+ * Delete a particular transaction
+ * @route DELETE /transactions/:transactionId
+ * @access Private
+ */
+export const deleteTransaction = asyncErrorHandler(async (req, res, next) => {
+    const { transactionId } = req.params;
+
+    const transaction = await fetchTransactionDetailsById(transactionId);
+    if (!transaction) {
+        return next(new AppError(
+            'Transaction not found',
+            404,
+            errorCodes.TRANSACTION_NOT_FOUND
+        ));
+    }
+
+    const group = await fetchGroupDetailsById(transaction.groupId);
+    if (!group) {
+        return next(new AppError(
+            errorMessages.GROUP_NOT_FOUND,
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
+
+    if (!userInGroup(req.user.userId, group)) {
+        return next(new AppError(
+            errorMessages.GROUP_ACCESS_DENIED,
+            403,
+            errorCodes.GROUP_ACCESS_DENIED
+        ));
+    }
+
+    const users = transaction.users_involved;
+    await deleteTransactionFromUsers(transactionId, users);
+
+    group.transactions = group.transactions.filter((t) => {
+        return t.transaction.toString() !== transactionId.toString();
+    });
+
+    group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(
+        group.transactionMatrix, 
+        transaction
+    );
+
+    group.markModified('transactionMatrix.matrix');
+    group.markModified('transactionMatrix.rowSum');
+    group.markModified('transactionMatrix.colSum');
+    await group.save();
+
+     await Transaction.findByIdAndDelete(transactionId);
+
+    sendSuccess(
+        res,
+        200,
+        'Transaction deleted successfully!'
+    );
+})
+
 /* DELETE A PARTICULAR TRANSACTION */
-export const deleteTransaction = async (req, res) => {
+export const deleteTransaction1 = async (req, res) => {
     console.log("Deleting a particular transaction");
     try {
         /*

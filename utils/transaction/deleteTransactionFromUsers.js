@@ -1,25 +1,38 @@
 import User from "../../models/User.js";
+import { AppError } from "../errors/appError.js";
+import { errorCodes } from "../errors/errorCodes.js";
+import { errorMessages } from "../errors/errorMessages.js";
 
 export const deleteTransactionFromUsers = async (tId, users) => {
     try {
         for (let user of users) {
-            // console.log (user);
             const userDetails = await User.findOne({
                 username: user.username
             })
-            console.log (userDetails.username);
-            
-            // console.log (userDetails.transactions);
+
+            if (!userDetails) {
+                throw new AppError(
+                    errorMessages.USER_NOT_FOUND,
+                    404,
+                    errorCodes.USER_NOT_FOUND
+                );
+            }
+
             userDetails.transactions = userDetails.transactions.filter((t) => {
                 return t.transaction.toString() !== tId.toString()
             });
-            // console.log (userDetails.transactions);
-            // console.log (userDetails);
             await userDetails.save();
         }
     }
     catch (err) {
-        console.error('Error deleting transaction from the users', err.message);
-        throw new Error(err.message);
+        if (err instanceof AppError) {
+            throw err;
+        }
+
+        throw new AppError(
+            'Database error while deleting the transaction from the database',
+            500,
+            errorCodes.DATABASE_OPERATION_ERROR
+        );
     }
 }
