@@ -16,6 +16,7 @@ import { AppError } from "../utils/errors/appError.js";
 import { errorCodes } from "../utils/errors/errorCodes.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
+import { deleteSingleTransaction } from "../utils/transaction/deleteSingleTransaction.js";
 
 /**
  * Create a new transaction
@@ -262,50 +263,52 @@ export const fetchTransactionDetails = asyncErrorHandler(async (req, res, next) 
 export const deleteTransaction = asyncErrorHandler(async (req, res, next) => {
     const { transactionId } = req.params;
 
-    const transaction = await fetchTransactionDetailsById(transactionId);
-    if (!transaction) {
-        return next(new AppError(
-            'Transaction not found',
-            404,
-            errorCodes.TRANSACTION_NOT_FOUND
-        ));
-    }
+    // const transaction = await fetchTransactionDetailsById(transactionId);
+    // if (!transaction) {
+    //     return next(new AppError(
+    //         'Transaction not found',
+    //         404,
+    //         errorCodes.TRANSACTION_NOT_FOUND
+    //     ));
+    // }
 
-    const group = await fetchGroupDetailsById(transaction.groupId);
-    if (!group) {
-        return next(new AppError(
-            errorMessages.GROUP_NOT_FOUND,
-            404,
-            errorCodes.GROUP_NOT_FOUND
-        ));
-    }
+    // const group = await fetchGroupDetailsById(transaction.groupId);
+    // if (!group) {
+    //     return next(new AppError(
+    //         errorMessages.GROUP_NOT_FOUND,
+    //         404,
+    //         errorCodes.GROUP_NOT_FOUND
+    //     ));
+    // }
 
-    if (!userInGroup(req.user.userId, group)) {
-        return next(new AppError(
-            errorMessages.GROUP_ACCESS_DENIED,
-            403,
-            errorCodes.GROUP_ACCESS_DENIED
-        ));
-    }
+    // if (!userInGroup(req.user.userId, group)) {
+    //     return next(new AppError(
+    //         errorMessages.GROUP_ACCESS_DENIED,
+    //         403,
+    //         errorCodes.GROUP_ACCESS_DENIED
+    //     ));
+    // }
 
-    const users = transaction.users_involved;
-    await deleteTransactionFromUsers(transactionId, users);
+    // const users = transaction.users_involved;
+    // await deleteTransactionFromUsers(transactionId, users);
 
-    group.transactions = group.transactions.filter((t) => {
-        return t.transaction.toString() !== transactionId.toString();
-    });
+    // group.transactions = group.transactions.filter((t) => {
+    //     return t.transaction.toString() !== transactionId.toString();
+    // });
 
-    group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(
-        group.transactionMatrix, 
-        transaction
-    );
+    // group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(
+    //     group.transactionMatrix, 
+    //     transaction
+    // );
 
-    group.markModified('transactionMatrix.matrix');
-    group.markModified('transactionMatrix.rowSum');
-    group.markModified('transactionMatrix.colSum');
-    await group.save();
+    // group.markModified('transactionMatrix.matrix');
+    // group.markModified('transactionMatrix.rowSum');
+    // group.markModified('transactionMatrix.colSum');
+    // await group.save();
 
-     await Transaction.findByIdAndDelete(transactionId);
+    await deleteSingleTransaction(req, transactionId);
+
+    await Transaction.findByIdAndDelete(transactionId);
 
     sendSuccess(
         res,
@@ -313,75 +316,6 @@ export const deleteTransaction = asyncErrorHandler(async (req, res, next) => {
         'Transaction deleted successfully!'
     );
 })
-
-/* DELETE A PARTICULAR TRANSACTION */
-export const deleteTransaction1 = async (req, res) => {
-    console.log("Deleting a particular transaction");
-    try {
-        /*
-            1. Check if transaction exists or not.
-            2. Check the group the transaction is a part of
-            3. Check if the logged in user is a member of the group or not
-            4. Loop through the array of users in the transaction and delete the particular transaction from every user.
-            5. Delete the transaction from the group document.
-            6. Delete the transaction.
-        */
-
-        const { transactionId } = req.params;
-
-        const transaction = await fetchTransactionDetailsById(transactionId);
-
-        if (!transaction) {
-            return res.status(404).json({
-                message: 'Transaction not found'
-            });
-        }
-
-        const group = await fetchGroupDetailsById(transaction.groupId);
-        if (!group) {
-            return res.status(404).json({
-                message: 'Group not found'
-            });
-        }
-
-        if (!userInGroup(req.user.userId, group)) {
-            return res.status(404).json({
-                message: `Logged in user doesn't belong to the group the transaction is part of. ACCESS DENIED`
-            });
-        }
-
-        // console.log (transaction.users_involved);
-        const users = transaction.users_involved;
-        await deleteTransactionFromUsers(transactionId, users);
-
-        // console.log (group);
-        group.transactions = group.transactions.filter((t) => {
-            return t.transaction.toString() !== transactionId.toString();
-        })
-
-        // console.log ("Initially");
-        // console.log (group.transactionMatrix);
-        group.transactionMatrix = deleteTrnasactionFromTransactionMatrix(group.transactionMatrix, transaction);
-        // console.log ("Finally");
-        // console.log (group.transactionMatrix);
-
-        group.markModified('transactionMatrix.matrix');
-        group.markModified('transactionMatrix.rowSum');
-        group.markModified('transactionMatrix.colSum');
-        await group.save();
-
-        await Transaction.findByIdAndDelete(transactionId);
-
-        return res.status(200).json({
-            message: 'Transaction deleted successfully'
-        });
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        })
-    }
-}
 
 export const deleteAllTransactions = async (req, res) => {
     try {
