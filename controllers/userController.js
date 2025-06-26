@@ -141,9 +141,9 @@ export const searchUser = asyncErrorHandler(async (req, res, next) => {
 
     const users = await User.find({
         $or: [
-            { username: { $regex: query, $options: "i"}},
-            { email: { $regex: query, $options: "i" }},
-            { mobileNumber: { $regex: query, $options: "i" }}
+            { username: { $regex: trimmedQuery, $options: "i"}},
+            { email: { $regex: trimmedQuery, $options: "i" }},
+            { mobileNumber: { $regex: trimmedQuery, $options: "i" }}
         ],
         isActive: true
     }).select('firstName lastName username email mobileNumber');
@@ -158,40 +158,6 @@ export const searchUser = asyncErrorHandler(async (req, res, next) => {
         }
     );
 })
-
-/* SEARCH FOR USERS BASED ON QUERY (username or email) */
-export const searchUser1  =async (req, res) => {
-    console.log ('Searching for users...');
-    try {
-        const query = req.query.query;
-        // console.log (query);
-
-        if (!query || query.trim() == '') {
-            return res.status(400).json({
-                message: 'Query cannot be empty'
-            });
-        }
-
-        const users = await User.find({
-            $or: [
-                { username: { $regex: query, $options: "i"}},
-                { email: { $regex: query, $options: "i" }},
-                { mobileNumber: { $regex: query, $options: "i" }}
-            ]
-        }).select('firstName lastName username email mobileNumber');
-
-        // console.log (users);
-        return res.status(200).json({
-            count: users.length,
-            users: users
-        });
-    }
-    catch (err) {
-        return res.status(500).json({
-            error: err.message
-        });
-    }
-}
 
 /**
  * Update Password of Logged In User
