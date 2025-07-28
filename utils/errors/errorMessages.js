@@ -1,6 +1,6 @@
 export const errorMessages = {
     // Authentication Messages
-    INVALID_CREDENTIALS: 'Invalid username or password. Please check your credentials and try again.',
+    INVALID_CREDENTIALS: 'Invalid password. Please check your credentials and try again.',
     USER_NOT_FOUND: 'User account not found. Please check your username or register for a new account.',
     TOKEN_MISSING: 'Access token is required. Please log in to continue.',
     TOKEN_INVALID: 'Invalid access token. Please log in again.',

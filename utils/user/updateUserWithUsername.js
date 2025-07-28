@@ -20,7 +20,7 @@ export const updateUserWithUsername = async (body, username) => {
         }
 
         if (body.email &&  body.email !== user.email) {
-            const emailExists = checkEmailExists(body.email);
+            const emailExists = await checkEmailExists(body.email);
             if (emailExists) {
                 throw new AppError(
                     errorMessages.EMAIL_ALREADY_EXISTS,
@@ -31,7 +31,7 @@ export const updateUserWithUsername = async (body, username) => {
         }
 
         if (body.mobileNumber && body.mobileNumber !== user.mobileNumber) {
-            const mobileExists = await checkMobileExists(body.email);
+            const mobileExists = await checkMobileExists(body.mobileNumber);
             if (mobileExists) {
                 throw new AppError(
                     errorMessages.MOBILE_ALREADY_EXISTS,

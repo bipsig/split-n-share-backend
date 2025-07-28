@@ -210,8 +210,6 @@ export const deleteUser = asyncErrorHandler(async (req, res, next) => {
  * @access Private
  */
 export const getAccessToken = asyncErrorHandler(async (req, res, next) => {
-    console.log ("Getting Access Token Details");
-
     sendSuccess(
         res,
         200,

@@ -17,12 +17,12 @@ import { sendSuccess } from "../utils/errors/responseHandler.js";
  */
 export const register = asyncErrorHandler(async (req, res, next) => {
     const userData = req.body;
-    
+
     const existingUser = await User.findOne({
         $or: [
             { email: userData.email },
             { username: userData.username },
-            ...( userData.mobileNumber ? [{ mobileNumber: userData.mobileNumber}] : [])
+            ...(userData.mobileNumber ? [{ mobileNumber: userData.mobileNumber }] : [])
         ]
     });
 
@@ -35,14 +35,18 @@ export const register = asyncErrorHandler(async (req, res, next) => {
             errorMessage = errorMessages.EMAIL_ALREADY_EXISTS;
         }
         else if (existingUser.username === userData.username) {
-            errorCode = errorCodes.USER_USERNAME_EXISTS;errorMessage = errorMessages.USERNAME_ALREADY_EXISTS;
+            errorCode = errorCodes.USER_USERNAME_EXISTS; errorMessage = errorMessages.USERNAME_ALREADY_EXISTS;
         }
         else if (existingUser.mobileNumber === userData.mobileNumber) {
             errorCode = errorCodes.USER_MOBILE_EXISTS;
             errorMessage = errorMessages.MOBILE_ALREADY_EXISTS;
         }
 
-        return next(new AppError(errorMessage, 409, errorCode, true));
+        return next(new AppError (
+            errorMessage,
+            409,
+            errorCode,
+        ));
     }
 
     let newUser = new User(userData);
@@ -56,11 +60,11 @@ export const register = asyncErrorHandler(async (req, res, next) => {
 
     savedUser.password = undefined;
 
-    console.log ('User registered successfully!')
+    console.log('User registered successfully!')
 
     sendSuccess(
-        res, 
-        201, 
+        res,
+        201,
         errorMessages.REGISTRATION_SUCCESS,
         {
             user: {
@@ -86,8 +90,8 @@ export const login = asyncErrorHandler(async (req, res, next) => {
 
     if (!username || !password) {
         return next(new AppError(
-            'Username and password are required', 
-            400, 
+            'Username and password are required',
+            400,
             errorCodes.VALIDATION_REQUIRED_FIELD
         ));
     }
@@ -96,17 +100,17 @@ export const login = asyncErrorHandler(async (req, res, next) => {
 
 
     if (!user) {
-        return next(new AppError (
-            errorMessages.USER_NOT_FOUND, 
-            401, 
+        return next(new AppError(
+            errorMessages.USER_NOT_FOUND,
+            401,
             errorCodes.USER_NOT_FOUND
         ));
     }
 
     if (!user.isActive) {
-        return next(new AppError (
-            'You account has been deactivated. Please contact support!', 
-            401, 
+        return next(new AppError(
+            'You account has been deactivated. Please contact support!',
+            401,
             errorCodes.AUTH_UNAUTHORIZED
         ));
     }
@@ -114,14 +118,14 @@ export const login = asyncErrorHandler(async (req, res, next) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
-        return next(new AppError (
-            errorMessages.INVALID_CREDENTIALS, 
-            401, 
+        return next(new AppError(
+            errorMessages.INVALID_CREDENTIALS,
+            401,
             errorCodes.AUTH_INVALID_CREDENTIALS
         ));
     }
 
-    const accessToken = createToken (user);
+    const accessToken = createToken(user);
 
     sendSuccess(
         res,
@@ -149,9 +153,9 @@ export const logout = asyncErrorHandler(async (req, res, next) => {
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-        return next(new AppError (
-            errorMessages.TOKEN_MISSING, 
-            401, 
+        return next(new AppError(
+            errorMessages.TOKEN_MISSING,
+            401,
             errorCodes.AUTH_TOKEN_MISSING
         ));
     }
@@ -159,12 +163,20 @@ export const logout = asyncErrorHandler(async (req, res, next) => {
     const existingBlacklistEntry = await Blacklist.findOne({ token: token });
 
     if (existingBlacklistEntry) {
-        return sendSuccess(res, 200, 'You are already logged out');
+        return sendSuccess(
+            res, 
+            200, 
+            'You are already logged out'
+        );
     }
 
-    blacklistToken(token);
+    await blacklistToken(token);
 
-    sendSuccess(res, 200, errorMessages.LOGOUT_SUCCESS);
+    sendSuccess(
+        res, 
+        200, 
+        errorMessages.LOGOUT_SUCCESS
+    );
 })
 
 /**
@@ -192,8 +204,8 @@ export const cleanup = asyncErrorHandler(async (req, res, next) => {
     else {
         sendSuccess(
             res,
-            201,
-            `Successfully reSuccessfully removed ${deletedCount} expired token${deletedCount > 1 ? 's' : ''} from the database.`,
+            200,
+            `Successfully removed ${deletedCount} expired token${deletedCount > 1 ? 's' : ''} from the database.`,
             { deletedCount }
         );
     }

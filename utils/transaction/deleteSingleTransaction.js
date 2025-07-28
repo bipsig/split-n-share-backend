@@ -26,7 +26,6 @@ export const deleteSingleTransaction = async (req, transactionId) => {
                 errorCodes.GROUP_NOT_FOUND
             ));
         }
-
         if (!userInGroup(req.user.userId, group)) {
             return next(new AppError(
                 errorMessages.GROUP_ACCESS_DENIED,

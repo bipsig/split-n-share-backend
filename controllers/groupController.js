@@ -27,7 +27,7 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
 
     if (!name || !name.trim()) {
         return next(new AppError(
-            'Group name us required',
+            'Group name is required',
             400,
             errorCodes.VALIDATION_REQUIRED_FIELD
         ));
@@ -405,6 +405,10 @@ export const deleteGroup = asyncErrorHandler(async (req, res, next) => {
 export const deleteAllGroups = asyncErrorHandler(async (req, res, next) => {
     const result = await Group.deleteMany({});
 
+    await User.updateMany({}, {
+        $set: { groups: [] }
+    });
+
     sendSuccess(
         res,
         200,
@@ -412,18 +416,3 @@ export const deleteAllGroups = asyncErrorHandler(async (req, res, next) => {
         { deletedCount: result.deletedCount }
     );
 })
-
-export const deleteAllGroups1 = async (req, res) => {
-    try {
-        // console.log ("Deleting all groups");
-        const result = await Group.deleteMany({});
-        console.log(`${result.deletedCount} group(s) deleted.`);
-        res.status(200).json({
-            message: `${result.deletedCount} group(s) deleted successfully.`
-        });
-    }
-    catch (err) {
-        console.error('Error deleting groups:', err);
-        res.status(500).json({ message: 'Error deleting groups', error: err.message });
-    }
-};

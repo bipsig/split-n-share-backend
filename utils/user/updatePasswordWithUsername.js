@@ -7,7 +7,7 @@ import { errorMessages } from "../errors/errorMessages.js";
 export const updatePasswordWithUsername = async (body, username) => {
     try {
         if (!body.oldPassword || !body.newPassword) {
-            return new AppError(
+            throw new AppError(
                 'Both current and new password are required',
                 400,
                 errorCodes.VALIDATION_REQUIRED_FIELD

@@ -28,7 +28,7 @@ export const validateToken = asyncErrorHandler(async (req, res, next) => {
         token: token
     });
 
-    if (blacklistedToken.size > 0) {
+    if (blacklistedToken.length > 0) {
         return next(new AppError(
             errorMessages.TOKEN_BLACKLISTED,
             403,
