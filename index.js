@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import morgan from "morgan";
 import mongoose from "mongoose";
 import axios from "axios";
+import cors from "cors";
 import User from "./models/User.js";
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
@@ -17,6 +18,7 @@ dotenv.config();
 const app = express();
 app.use (express.json());
 app.use (morgan ('dev'));
+app.use (cors());
 
 const port = process.env.PORT || 3000;
 
