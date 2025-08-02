@@ -6,7 +6,7 @@ export const deleteTrnasactionFromTransactionMatrix = (transactionMatrix, transa
 
         for (let user of transaction.users_involved) {
 
-            const share = parseFloat(transaction.amount) * (parseFloat(user.share));
+            const share = (parseFloat(user.share));
             transactionMatrix.matrix[transaction.user_paid.username][user.username] -= share;
 
             transactionMatrix.colSum[user.username] -= share;
