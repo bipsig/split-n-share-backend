@@ -1,3 +1,4 @@
+import Group from "../../models/Group.js";
 import User from "../../models/User.js";
 import { AppError } from "../errors/appError.js";
 import { errorCodes } from "../errors/errorCodes.js";
@@ -12,13 +13,12 @@ export const fetchGroupsByUsername = async (username) => {
                 errorCodes.AUTH_USER_NOT_FOUND
             );
         }
-    
+
         const user = await User.findOne({ username: username.trim() }).populate({
             path: 'groups',
-            // select: 'name description members',
-            options: { sort: { createdAt: -1 }} 
+            options: { sort: { createdAt: -1 } }
         }).lean();
-    
+
         if (!user) {
             throw new AppError(
                 errorMessages.USER_NOT_FOUND,
@@ -26,8 +26,19 @@ export const fetchGroupsByUsername = async (username) => {
                 errorCodes.AUTH_USER_NOT_FOUND
             );
         }
-    
-        return user.groups;
+
+        const updatedGroups = await Promise.all(
+            user.groups.map(async (group) => {
+                const groupTitle = await Group.findById(group.group).select('name');
+                return {
+                    title: groupTitle?.name || 'Unknown',
+                    groupId: group.group,
+                    groupSlug: group.groupSlug,
+                };
+            })
+        );
+
+        return updatedGroups;
     }
     catch (err) {
         if (err instanceof AppError) {
