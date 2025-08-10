@@ -79,8 +79,8 @@ app.use ('/api/v1/users', userRoutes);
 app.use ('/api/v1/groups', groupRoutes);
 app.use ('/api/v1/transactions', transactionRoutes);
 
-app.listen(port, () => {
-    console.log(`Server running successfully on port number ${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server running at http://0.0.0.0:${port}`);
 });
 
 app.use (globalErrorHandler);

@@ -221,6 +221,80 @@ export const getAccessToken = asyncErrorHandler(async (req, res, next) => {
 })
 
 /**
+ * Getting Balance of User
+ * @route users/balance
+ * @access Private
+ */
+export const getUserTotalBalance = asyncErrorHandler(async (req, res, next) => {
+    sendSuccess(
+        res,
+        200,
+        'Total Balance of user fetched successfully!',
+        {
+            balance: 100
+        }
+    )
+});
+
+/**
+ * Getting details of users who need to pay to the logged in user
+ * @route users/owe
+ * users [who] owe me
+ * @access Private
+ */
+export const getUsersWhoNeedToPay = asyncErrorHandler(async (req, res, next) => {
+    const data = [
+        {
+            userId: 'Some userID',
+            username: 'sagnik'
+        },
+        {
+            userId: 'Different userId',
+            username: 'bipasha'
+        }
+    ];
+
+    sendSuccess(
+        res,
+        200,
+        'Fetched list of users who need to pay the logged in user.',
+        {
+            totalCount: 2,
+            data
+        }
+    );
+});
+
+/**
+ * Getting details of users will get back money from the logged in user.
+ * @route users/is-owed
+ * users [who] is/are owed [by me]
+ * @access Private
+ */
+export const getUsersWhoGetsBack = asyncErrorHandler(async (req, res, next) => {
+    const data = [
+        {
+            userId: 'Some userID',
+            username: 'mayank'
+        },
+        {
+            userId: 'Different userId',
+            username: 'adrita'
+        }
+    ];
+
+    sendSuccess(
+        res,
+        200,
+        "Fetched list of users the logged in user needs to pay back",
+        {
+            totalCount: 2,
+            data
+        }
+    );
+})
+
+/**
  * Get all Users
  * @route users/all 
  * @access Private (Developer only)
