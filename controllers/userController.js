@@ -1,5 +1,4 @@
 import User from "../models/User.js";
-import jwt from "jsonwebtoken"
 import { blacklistToken } from "../utils/auth/blacklistToken.js";
 import { checkEmailExists } from "../utils/user/checkEmailExists.js";
 import { deleteUserWithUsername } from "../utils/user/deleteUserWithUsername.js"
@@ -11,8 +10,7 @@ import { AppError } from "../utils/errors/appError.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 import { errorCodes } from "../utils/errors/errorCodes.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
-import { calculateWhatYouGetBack } from "../utils/user/calculateWhatYouGetBack.js";
-import { calculateWhatYouPay } from "../utils/user/calculateWhatYouPay.js";
+import { getUserSettlementDetails } from "../utils/user/getUserSettlementDetails.js";
 
 /**
  * Get logged in user details
@@ -221,11 +219,11 @@ export const getAccessToken = asyncErrorHandler(async (req, res, next) => {
 })
 
 /**
- * Getting Balance of User
- * @route users/balance
+ * Get complete financial summary
+ * @route users/financial-summary
  * @access Private
  */
-export const getUserTotalBalance = asyncErrorHandler(async (req, res, next) => {
+export const getFinancialSummary = asyncErrorHandler(async (req, res, next) => {
     const user = await User.findOne({
         username: req.user.username
     });
@@ -238,75 +236,40 @@ export const getUserTotalBalance = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
-    const youGetBack = await calculateWhatYouGetBack (user);
-    const youPay = await calculateWhatYouPay (user);
+    const data = await getUserSettlementDetails(user);
+
+    let youGetBack = 0, youPay = 0;
+    const youOwe = [], youAreOwed = [];
+
+    for (let ele of data) {
+        if (ele.type === 'you get back') {
+            youGetBack += ele.amount;
+            youAreOwed.push (ele);
+        }
+        else {
+            youPay += ele.amount
+            youOwe.push(ele);
+        }
+    }
+
+    console.log (data);
 
     sendSuccess(
         res,
         200,
-        'Total Balance of user fetched successfully!',
+        "Fetched the financial summary",
         {
-            "you-owe": youPay,
-            "you-are-owed": youGetBack,
-            balance: youGetBack - youPay
-        }
-    )
-});
-
-/**
- * Getting details of users who need to pay to the logged in user
- * @route users/owe
- * users [who] owe me
- * @access Private
- */
-export const getUsersWhoNeedToPay = asyncErrorHandler(async (req, res, next) => {
-    const data = [
-        {
-            userId: 'Some userID',
-            username: 'sagnik'
-        },
-        {
-            userId: 'Different userId',
-            username: 'bipasha'
-        }
-    ];
-
-    sendSuccess(
-        res,
-        200,
-        'Fetched list of users who need to pay the logged in user.',
-        {
-            totalCount: 2,
-            data
-        }
-    );
-});
-
-/**
- * Getting details of users will get back money from the logged in user.
- * @route users/is-owed
- * users [who] is/are owed [by me]
- * @access Private
- */
-export const getUsersWhoGetsBack = asyncErrorHandler(async (req, res, next) => {
-    const data = [
-        {
-            userId: 'Some userID',
-            username: 'mayank'
-        },
-        {
-            userId: 'Different userId',
-            username: 'adrita'
-        }
-    ];
-
-    sendSuccess(
-        res,
-        200,
-        "Fetched list of users the logged in user needs to pay back",
-        {
-            totalCount: 2,
-            data
+            youPay,
+            youGetBack,
+            balance: youGetBack - youPay,
+            peopleYouOwe: {
+                count: youOwe.length,
+                data: youOwe
+            },
+            peopleWhoOweYou: {
+                count: youAreOwed.length,
+                data: youAreOwed
+            }
         }
     );
 })
