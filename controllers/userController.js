@@ -11,6 +11,8 @@ import { AppError } from "../utils/errors/appError.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 import { errorCodes } from "../utils/errors/errorCodes.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
+import { calculateWhatYouGetBack } from "../utils/user/calculateWhatYouGetBack.js";
+import { calculateWhatYouPay } from "../utils/user/calculateWhatYouPay.js";
 
 /**
  * Get logged in user details
@@ -18,8 +20,6 @@ import { sendSuccess } from "../utils/errors/responseHandler.js";
  * @access Private
  */
 export const getUserDetails = asyncErrorHandler(async (req, res, next) => {
-    console.log ('Getting logged in user details');
-
     const user = await User.findOne({
         username: req.user.username
     });
@@ -226,12 +226,29 @@ export const getAccessToken = asyncErrorHandler(async (req, res, next) => {
  * @access Private
  */
 export const getUserTotalBalance = asyncErrorHandler(async (req, res, next) => {
+    const user = await User.findOne({
+        username: req.user.username
+    });
+
+    if (!user) {
+        return next(new AppError(
+            errorMessages.USER_NOT_FOUND,
+            404,
+            errorCodes.AUTH_USER_NOT_FOUND
+        ));
+    }
+
+    const youGetBack = await calculateWhatYouGetBack (user);
+    const youPay = await calculateWhatYouPay (user);
+
     sendSuccess(
         res,
         200,
         'Total Balance of user fetched successfully!',
         {
-            balance: 100
+            "you-owe": youPay,
+            "you-are-owed": youGetBack,
+            balance: youGetBack - youPay
         }
     )
 });
