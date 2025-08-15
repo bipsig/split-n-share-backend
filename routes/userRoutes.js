@@ -1,6 +1,6 @@
 import express from "express";
 import { validateDeveloper, validateToken } from "../middleware/authMiddleware.js";
-import { deleteAllUsers, deleteUser, getAccessToken, getAllUsers, getFinancialSummary, getGroupsSummary, getUserDetails, isEmailUnique, searchUser, updateDetails, updatePassword } from "../controllers/userController.js";
+import { deleteAllUsers, deleteUser, getAccessToken, getAllUsers, getFinancialSummary, getGroupsSummary, getRecentTransactions, getUserDetails, isEmailUnique, searchUser, updateDetails, updatePassword } from "../controllers/userController.js";
 
 const router = express.Router();
 
@@ -13,6 +13,7 @@ router.get ('/token', validateToken, getAccessToken);
 
 router.get ('/financial-summary', validateToken, getFinancialSummary);
 router.get ('/groups-summary', validateToken, getGroupsSummary);
+router.get ('/recent-transactions', validateToken, getRecentTransactions);
 
 router.get ('/is-email-unique', isEmailUnique);
 router.get ('/search', searchUser);

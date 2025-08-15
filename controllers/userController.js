@@ -12,6 +12,7 @@ import { errorCodes } from "../utils/errors/errorCodes.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { getUserSettlementDetails } from "../utils/user/getUserSettlementDetails.js";
 import { getGroupsSummaryDetails } from "../utils/user/getGroupsSummaryDetails.js";
+import { getRecentTransactionsSummary } from "../utils/user/getRecentTransactionsSummary.js";
 
 /**
  * Get logged in user details
@@ -292,6 +293,37 @@ export const getGroupsSummary = asyncErrorHandler(async (req, res, next) => {
     }
 
     const data = await getGroupsSummaryDetails(user);
+
+    sendSuccess(
+        res,
+        200,
+        "Fetched the groups summary",
+        {
+            count: data.length,
+            data
+        }
+    );
+})
+
+/**
+ * Get recent transactions of a user
+ * @route /users/recent-transactions
+ * @access Private
+ */
+export const getRecentTransactions = asyncErrorHandler(async (req, res, next) => {
+    const user = await User.findOne({
+        username: req.user.username
+    });
+
+    if (!user) {
+        return next(new AppError(
+            errorMessages.USER_NOT_FOUND,
+            404,
+            errorCodes.AUTH_USER_NOT_FOUND
+        ));
+    }
+
+    const data = await getRecentTransactionsSummary (user);
 
     sendSuccess(
         res,
