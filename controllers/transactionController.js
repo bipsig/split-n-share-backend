@@ -161,9 +161,15 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         finalUsers,
         amount
     );
+    
+    const userPaid = await User.findById(userPaidId);
 
+    let isUserPaidInvolved = false;
     for (let user of finalUsers) {
         const currentUser = await User.findById(user.user);
+        if (currentUser.username.toString() === userPaid.username) {
+            isUserPaidInvolved = true;
+        }
         currentUser.transactions.push({
             transaction: result._id,
             transactionSlug: slug,
@@ -172,14 +178,17 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         await currentUser.save();
     }
 
-    const userPaid = await User.findById(userPaidId);
-    userPaid.transactions.push({
-        transaction: result._id,
-        transactionSlug: slug,
-        type: type
-    });
+    if (!isUserPaidInvolved) {
+        userPaid.transactions.push({
+            transaction: result._id,
+            transactionSlug: slug,
+            type: type
+        });
+    }
 
     await userPaid.save();
+
+    group.totalBalance += amount
 
     group.markModified('transactionMatrix.matrix');
     group.markModified('transactionMatrix.rowSum');

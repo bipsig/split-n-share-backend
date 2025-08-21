@@ -17,6 +17,7 @@ import { errorCodes } from "../utils/errors/errorCodes.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 import { fetchUserIdWithUsername } from "../utils/user/fetchUserIdWithUsername.js";
+import { calculateUserBalanceInGroup } from "../utils/group/calculateUserBalanceInGroup.js";
 
 /**
  * Create a new group
@@ -161,6 +162,55 @@ export const fetchGroupDetails = asyncErrorHandler(async (req, res, next) => {
 })
 
 /**
+ * Fetch Complete Groups Summary
+ * @route /groups/summary
+ * @access Private
+ */
+export const getGroupsSummary = asyncErrorHandler(async (req, res, next) => {
+    const { userId } = req.user;
+    const user = await User.findById(userId);
+    const userGroups = user.groups;
+
+    const groupsSummary = await Promise.all(
+        userGroups.map(async (group) => {
+            const groupDoc = await Group.findById(group.group)
+
+            const userBalance = calculateUserBalanceInGroup(groupDoc, user.username)
+
+            const transactionCount = groupDoc.transactions.filter((transaction) => {
+                if (!(transaction.type && transaction.type === 'Payment')) {
+                    return transaction
+                }
+            }).length;
+
+            return {
+                id: groupDoc._id,
+                name: groupDoc.name,
+                description: groupDoc.description,
+                category: groupDoc.category,
+                totalBalance: groupDoc.totalBalance,
+                currency: groupDoc.currency,
+                isActive: groupDoc.isActive,
+                createdBy: groupDoc.createdBy,
+                createdAt: groupDoc.createdAt,
+                selectedIcon: groupDoc.selectedIcon,
+                members:groupDoc.members,
+                transactionCount,
+                userBalance
+            };
+        })
+    );
+
+    sendSuccess(
+        res,
+        200,
+        'Group details retrieved successfully!',
+        { groupsSummary }
+    );
+
+})
+
+/**
  * Add Members to a group
  * @route POST /groups/:groupId/members 
  * @access Private
@@ -290,8 +340,6 @@ export const toggleMemberAdmin = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
-    const requiredUser = await fetchUserIdWithUsername(username);
-
     const isAlreadyMember = group.members.some(member => member.username.toString() === username);
     if (!isAlreadyMember) {
         return next(new AppError(
@@ -301,7 +349,7 @@ export const toggleMemberAdmin = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
-    const updatedMembers = group.members.map ((member) => {
+    const updatedMembers = group.members.map((member) => {
         if (member.username.toString() === username) {
             if (member.role === 'Admin') {
                 member.role = 'Member'
@@ -315,7 +363,7 @@ export const toggleMemberAdmin = asyncErrorHandler(async (req, res, next) => {
     })
 
     group.members = updatedMembers;
-    
+
 
     await group.save();
 
