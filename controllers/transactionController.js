@@ -24,7 +24,7 @@ import { deleteSingleTransaction } from "../utils/transaction/deleteSingleTransa
  * @access Private
  */
 export const createTransaction = asyncErrorHandler(async (req, res, next) => {
-    const { amount, user_paid, users_involved, groupId, description, type } = req.body;
+    const { amount, user_paid, users_involved, groupId, description, type, category } = req.body;
 
     if (!amount) {
         return next(new AppError(
@@ -138,6 +138,7 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         user_added: { userId: req.user.userId, username: req.user.username },
         description,
         slug,
+        category,
         amount,
         user_paid: { userId: userPaidId, username: user_paid },
         users_involved: finalUsers,

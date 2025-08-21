@@ -82,6 +82,36 @@ const transactionSchema = new mongoose.Schema({
         enum: ['Expense', 'Payment'],
         default: 'Expense'
     },
+    category: {
+        type: String,
+        enum: [
+            'Food & Dining',
+            'Transportation',
+            'Shopping',
+            'Entertainment',
+            'Bills & Utilities',
+            'Healthcare',
+            'Education',
+            'Travel',
+            'Groceries',
+            'Rent & Housing',
+            'Sports & Recreation',
+            'Personal Care',
+            'Insurance',
+            'Gifts',
+            'Charity',
+            'Business',
+            'Other'
+        ],
+        required: function() {
+            // Category is only required for Expense type transactions
+            return this.type === 'Expense';
+        },
+        default: function() {
+            // Set default category only for Expense transactions
+            return this.type === 'Expense' ? 'Other' : undefined;
+        }
+    },
     picturePath: {
         type: String,
         default: ''

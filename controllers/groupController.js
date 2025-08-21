@@ -23,7 +23,7 @@ import { errorMessages } from "../utils/errors/errorMessages.js";
  * @access Private
  */
 export const createGroup = asyncErrorHandler(async (req, res, next) => {
-    const { name, description, currency, category } = req.body;
+    const { name, description, currency, category, selectedIcon } = req.body;
 
     if (!name || !name.trim()) {
         return next(new AppError(
@@ -68,6 +68,7 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
     const group = new Group({
         name: name.trim(),
         slug,
+        selectedIcon,
         description: description.trim(),
         currency: currency || 'INR',
         category: category || 'Other',

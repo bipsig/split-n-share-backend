@@ -1,5 +1,13 @@
 import mongoose from "mongoose";
 
+const VALID_ICON_NAMES = [
+  'Home', 'Friends', 'Office', 'Other', 'Trip', 'Flight', 'Road Trip', 'Beach', 
+  'Mountain', 'Camping', 'Cruise', 'Cycling', 'Train', 'Bus Tour', 'Hotel', 'Map',
+  'Restaurant', 'Coffee', 'Pizza Party', 'Groceries', 'Wine Tasting', 'Gaming', 
+  'Music', 'Photography', 'Party', 'Birthday', 'Fitness', 'Education', 'Health', 
+  'Work', 'Tech', 'Gift', 'Event', 'Holiday', 'Summer', 'Winter', 'Rainy Day', 'Special'
+];
+
 const groupSchema = new mongoose.Schema(
     {
         name: {
@@ -19,9 +27,20 @@ const groupSchema = new mongoose.Schema(
             type: String,
             default: ''
         },
-        picturePath: {
+        selectedIcon: {
             type: String,
-            default: ''
+            enum: VALID_ICON_NAMES,
+            default: function() {
+                // Set default icon based on category
+                const categoryIconMap = {
+                    'Home': 'Home',
+                    'Trip': 'Trip', 
+                    'Office': 'Office',
+                    'Friends': 'Friends',
+                    'Other': 'Other'
+                };
+                return categoryIconMap[this.category] || 'Other';
+            }
         },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,
@@ -121,6 +140,15 @@ const groupSchema = new mongoose.Schema(
         timestamps: true
     }
 );
+
+groupSchema.pre('save', function(next) {
+    if (this.selectedIcon && !VALID_ICON_NAMES.includes(this.selectedIcon)) {
+        const error = new Error(`Invalid icon: ${this.selectedIcon}`);
+        error.name = 'ValidationError';
+        return next(error);
+    }
+    next();
+});
 
 groupSchema.index({ createdBy: 1 });
 groupSchema.index({ 'members.user': 1 });
