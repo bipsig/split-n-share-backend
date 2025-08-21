@@ -13,6 +13,7 @@ import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { getUserSettlementDetails } from "../utils/user/getUserSettlementDetails.js";
 import { getGroupsSummaryDetails } from "../utils/user/getGroupsSummaryDetails.js";
 import { getRecentTransactionsSummary } from "../utils/user/getRecentTransactionsSummary.js";
+import { summarizeFinancialData } from "../utils/user/summarizeFinancialData.js";
 
 /**
  * Get logged in user details
@@ -34,12 +35,16 @@ export const getUserDetails = asyncErrorHandler(async (req, res, next) => {
 
     user.password = undefined;
 
-    sendSuccess(
-        res,
-        200,
-        'User Details retrieved successfully!',
-        { user }
-    );
+    const userBalanceData = await getUserSettlementDetails(user);
+    const userSettlementData = summarizeFinancialData(userBalanceData);
+    user.totalBalance = userSettlementData.youGetBack - userSettlementData.youPay;
+
+        sendSuccess(
+            res,
+            200,
+            'User Details retrieved successfully!',
+            { user }
+        );
 })
 
 /**
@@ -48,7 +53,7 @@ export const getUserDetails = asyncErrorHandler(async (req, res, next) => {
  * @access Private
  */
 export const updateDetails = asyncErrorHandler(async (req, res, next) => {
-    console.log (`Updating details of user with username '${req.user.username}'`);
+    console.log(`Updating details of user with username '${req.user.username}'`);
 
     const user = await updateUserWithUsername(req.body, req.user.username);
     await user.save();
@@ -57,7 +62,7 @@ export const updateDetails = asyncErrorHandler(async (req, res, next) => {
 
     const authHeader = req.headers['authorization'];
     const oldAccessToken = authHeader && authHeader.split(' ')[1];
-    
+
     if (oldAccessToken) {
         await blacklistToken(oldAccessToken);
     }
@@ -68,9 +73,9 @@ export const updateDetails = asyncErrorHandler(async (req, res, next) => {
         res,
         200,
         'User details updated successfully!',
-        { 
+        {
             accessToken: newAccessToken,
-            user 
+            user
         }
     );
 })
@@ -81,18 +86,18 @@ export const updateDetails = asyncErrorHandler(async (req, res, next) => {
  * @access Public
  */
 export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
-    console.log ('Checking whether email is unique or not');
+    console.log('Checking whether email is unique or not');
 
     const { email } = req.query;
 
     if (!email || !email.trim()) {
-        return next (new AppError(
+        return next(new AppError(
             'Email parameter is required',
             400,
             errorCodes.VALIDATION_REQUIRED_FIELD
         ));
     }
-    console.log (email.trim());
+    console.log(email.trim());
     const emailExists = await checkEmailExists(email.trim());
 
     if (emailExists) {
@@ -106,7 +111,7 @@ export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
             }
         );
     }
-    else{
+    else {
         sendSuccess(
             res,
             200,
@@ -125,7 +130,7 @@ export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
  * @access Private 
  */
 export const searchUser = asyncErrorHandler(async (req, res, next) => {
-    console.log ('Searching for users....');
+    console.log('Searching for users....');
 
     const { query } = req.query;
 
@@ -141,9 +146,9 @@ export const searchUser = asyncErrorHandler(async (req, res, next) => {
 
     const users = await User.find({
         $or: [
-            { username: { $regex: trimmedQuery, $options: "i"}},
-            { email: { $regex: trimmedQuery, $options: "i" }},
-            { mobileNumber: { $regex: trimmedQuery, $options: "i" }}
+            { username: { $regex: trimmedQuery, $options: "i" } },
+            { email: { $regex: trimmedQuery, $options: "i" } },
+            { mobileNumber: { $regex: trimmedQuery, $options: "i" } }
         ],
         isActive: true
     }).select('firstName lastName username email mobileNumber');
@@ -165,7 +170,7 @@ export const searchUser = asyncErrorHandler(async (req, res, next) => {
  * @access Private 
  */
 export const updatePassword = asyncErrorHandler(async (req, res, next) => {
-    console.log (`Updating password of user '${req.user.username}'`);
+    console.log(`Updating password of user '${req.user.username}'`);
 
     const user = await updatePasswordWithUsername(req.body, req.user.username);
     await user.save();
@@ -186,15 +191,15 @@ export const updatePassword = asyncErrorHandler(async (req, res, next) => {
  * @access Private
  */
 export const deleteUser = asyncErrorHandler(async (req, res, next) => {
-    console.log (`Deleting user with username ${req.user.username}`);
+    console.log(`Deleting user with username ${req.user.username}`);
 
     await deleteUserWithUsername(req.user.username);
 
     const authHeader = req.headers["authorization"];
-    const oldAccessToken = authHeader && authHeader.split (' ')[1];
+    const oldAccessToken = authHeader && authHeader.split(' ')[1];
 
     if (oldAccessToken) {
-        await blacklistToken (oldAccessToken);
+        await blacklistToken(oldAccessToken);
     }
 
     sendSuccess(
@@ -240,35 +245,23 @@ export const getFinancialSummary = asyncErrorHandler(async (req, res, next) => {
 
     const data = await getUserSettlementDetails(user);
 
-    let youGetBack = 0, youPay = 0;
-    const youOwe = [], youAreOwed = [];
-
-    for (let ele of data) {
-        if (ele.type === 'you get back') {
-            youGetBack += ele.amount;
-            youAreOwed.push (ele);
-        }
-        else {
-            youPay += ele.amount
-            youOwe.push(ele);
-        }
-    }
+    const userSettlementData = summarizeFinancialData(data);
 
     sendSuccess(
         res,
         200,
         "Fetched the financial summary",
         {
-            youPay,
-            youGetBack,
-            balance: Math.abs(youGetBack - youPay),
+            youPay: userSettlementData.youPay,
+            youGetBack: userSettlementData.youGetBack,
+            balance: userSettlementData.youGetBack - userSettlementData.youPay  ,
             peopleYouOwe: {
-                count: youOwe.length,
-                data: youOwe
+                count: userSettlementData.youOwe.length,
+                data: userSettlementData.youOwe
             },
             peopleWhoOweYou: {
-                count: youAreOwed.length,
-                data: youAreOwed
+                count: userSettlementData.youAreOwed.length,
+                data: userSettlementData.youAreOwed
             }
         }
     );
@@ -323,7 +316,7 @@ export const getRecentTransactions = asyncErrorHandler(async (req, res, next) =>
         ));
     }
 
-    const data = await getRecentTransactionsSummary (user);
+    const data = await getRecentTransactionsSummary(user);
 
     sendSuccess(
         res,
@@ -342,7 +335,7 @@ export const getRecentTransactions = asyncErrorHandler(async (req, res, next) =>
  * @access Private (Developer only)
  */
 export const getAllUsers = asyncErrorHandler(async (req, res, next) => {
-    console.log ('Getting all registered users');
+    console.log('Getting all registered users');
     const users = await User.find({}).select('-password');
 
     sendSuccess(
@@ -362,7 +355,7 @@ export const getAllUsers = asyncErrorHandler(async (req, res, next) => {
  * @access Private (Developer only)
  */
 export const deleteAllUsers = asyncErrorHandler(async (req, res, next) => {
-    console.log ("Deleting all Users");
+    console.log("Deleting all Users");
 
     const result = await User.deleteMany({});
 
