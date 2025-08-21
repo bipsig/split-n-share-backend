@@ -16,6 +16,7 @@ import { AppError } from "../utils/errors/appError.js";
 import { errorCodes } from "../utils/errors/errorCodes.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
+import { fetchUserIdWithUsername } from "../utils/user/fetchUserIdWithUsername.js";
 
 /**
  * Create a new group
@@ -244,6 +245,89 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
         }
     );
 })
+
+/**
+ * Toggle admin status of members of group
+ * @route PATCH /:groupId/members/:username/admin
+ * @access Private (admin only)
+ */
+export const toggleMemberAdmin = asyncErrorHandler(async (req, res, next) => {
+    const { groupId, username } = req.params;
+
+    const { userId } = req.user;
+
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+        return next(new AppError(
+            'Invalid group ID format',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
+
+    const group = await fetchGroupDetailsById(groupId);
+
+    if (!group) {
+        return next(new AppError(
+            errorMessages.GROUP_NOT_FOUND,
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
+
+    if (!userInGroup(userId, group)) {
+        return next(new AppError(
+            'Access denied! You are not a member of this group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
+
+    if (fetchUserRole(userId, group.members) !== 'Admin') {
+        return next(new AppError(
+            'Access denied! Only group admins can toggle membership',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
+
+    const requiredUser = await fetchUserIdWithUsername(username);
+
+    const isAlreadyMember = group.members.some(member => member.username.toString() === username);
+    if (!isAlreadyMember) {
+        return next(new AppError(
+            'User you want to toggle is not a member of the group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
+
+    const updatedMembers = group.members.map ((member) => {
+        if (member.username.toString() === username) {
+            if (member.role === 'Admin') {
+                member.role = 'Member'
+            }
+            else {
+                member.role = 'Admin'
+            }
+        }
+
+        return member;
+    })
+
+    group.members = updatedMembers;
+    
+
+    await group.save();
+
+    sendSuccess(
+        res,
+        201,
+        `Successfully toggled membership`,
+        {
+            groupMembers: group.members
+        }
+    );
+});
 
 /**
  * 
