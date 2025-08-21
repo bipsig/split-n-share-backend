@@ -85,6 +85,11 @@ const groupSchema = new mongoose.Schema(
                 transactionSlug: {
                     type: String,
                     required: true
+                },
+                type: {
+                    type: String,
+                    enum: ['Expense', 'Payment'],
+                    default: 'Expense'
                 }
             }
         ],

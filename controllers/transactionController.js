@@ -50,6 +50,14 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
+    if (type === 'Payment' && users_involved.length > 1) {
+        return next(new AppError(
+            'For payment, user involved can be only 1',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
+
     if (!groupId) {
         return next(new AppError(
             'Group details is required',
@@ -66,7 +74,7 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
-    
+
     const group = await fetchGroupDetailsById(groupId);
     if (!group) {
         return next(new AppError(
@@ -75,8 +83,8 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
             errorCodes.GROUP_NOT_FOUND
         ));
     }
-    
-    // console.log("Checking Logged In user");
+
+    // Checking validity of logged in user.
     if (!userInGroup(req.user.userId, group)) {
         return next(new AppError(
             errorMessages.GROUP_ACCESS_DENIED,
@@ -84,9 +92,10 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
             errorCodes.GROUP_ACCESS_DENIED
         ));
     }
-    
+
     const userPaidId = await fetchUserIdWithUsername(user_paid);
 
+    // Checking validity of paid user
     if (!userInGroup(userPaidId, group)) {
         return next(new AppError(
             'The user who paid is not a member of this group',
@@ -139,15 +148,16 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
 
     const result = await transaction.save();
 
-     group.transactions.push({
+    group.transactions.push({
         transaction: result._id,
-        transactionSlug: slug
+        transactionSlug: slug,
+        type: type
     });
 
     group.transactionMatrix = addTransactionToTransactionMatrix(
-        group.transactionMatrix, 
-        user_paid, 
-        finalUsers, 
+        group.transactionMatrix,
+        user_paid,
+        finalUsers,
         amount
     );
 
@@ -155,10 +165,20 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         const currentUser = await User.findById(user.user);
         currentUser.transactions.push({
             transaction: result._id,
-            transactionSlug: slug
+            transactionSlug: slug,
+            type: type
         });
         await currentUser.save();
     }
+
+    const userPaid = await User.findById(userPaidId);
+    userPaid.transactions.push({
+        transaction: result._id,
+        transactionSlug: slug,
+        type: type
+    });
+
+    await userPaid.save();
 
     group.markModified('transactionMatrix.matrix');
     group.markModified('transactionMatrix.rowSum');
@@ -198,7 +218,7 @@ export const fetchTransactionsOfAGroup = asyncErrorHandler(async (req, res, next
         ));
     }
 
-    console.log (group);
+    console.log(group);
 
     const transactions = group.transactions;
 
