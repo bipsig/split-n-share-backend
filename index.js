@@ -20,6 +20,14 @@ app.use (express.json());
 app.use (morgan ('dev'));
 app.use (cors());
 
+// Browser Cache Disabled so that API calls are made everytime
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store");   // no caching at all
+  res.setHeader("Pragma", "no-cache");          // for HTTP/1.0 compatibility
+  res.setHeader("Expires", "0");
+  next();
+});
+
 const port = process.env.PORT || 3000;
 
 const mongo_uri = `mongodb+srv://${process.env.MONGODB_ATLAS_USERNAME}:${process.env.MONGODB_ATLAS_PASSWORD}@split-n-share.e8f54.mongodb.net/split-n-share?retryWrites=true&w=majority`;

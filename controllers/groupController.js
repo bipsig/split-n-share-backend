@@ -18,6 +18,7 @@ import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 import { fetchUserIdWithUsername } from "../utils/user/fetchUserIdWithUsername.js";
 import { calculateUserBalanceInGroup } from "../utils/group/calculateUserBalanceInGroup.js";
+import { fetchTransactionDetailsById } from "../utils/transaction/fetchTransactionDetailsById.js";
 
 /**
  * Create a new group
@@ -126,7 +127,7 @@ export const fetchGroups = asyncErrorHandler(async (req, res, next) => {
  */
 export const fetchGroupDetails = asyncErrorHandler(async (req, res, next) => {
     const { groupId } = req.params;
-    const { userId } = req.user;
+    const { userId, username } = req.user;
 
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
         return next(new AppError(
@@ -153,16 +154,76 @@ export const fetchGroupDetails = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
+    const groupData = group.toObject();
+    const userBalance = calculateUserBalanceInGroup(group, username);
+    groupData.userBalance = userBalance;
+    // await new Promise((resolve) => setTimeout(resolve, 10000));
+
     sendSuccess(
         res,
         200,
         'Group details retrieved successfully!',
-        { group }
+        {
+            groupData
+        }
     );
 })
 
 /**
- * Fetch Complete Groups Summary
+ * Fetch all Transactions (with details) of a Group
+ * @route /groups/:groupId/transactions
+ * @access Private
+ */
+export const fetchGroupTransactionsDetails = asyncErrorHandler(async (req, res, next) => {
+    const { groupId } = req.params;
+    const { userId, username } = req.user;
+
+    if (!mongoose.Types.ObjectId.isValid(groupId)) {
+        return next(new AppError(
+            'Invalid group ID format',
+            400,
+            errorCodes.VALIDATION_INVALID_FORMAT
+        ));
+    }
+
+    const group = await fetchGroupDetailsById(groupId);
+    if (!group) {
+        return next(new AppError(
+            'Group not found',
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
+
+    if (!userInGroup(userId, group)) {
+        return next(new AppError(
+            'Access denied! You are not a member of this group',
+            403,
+            errorCodes.AUTH_ACCESS_FORBIDDEN
+        ));
+    }
+
+    const transactionsData = await Promise.all(
+        group.transactions.map((async (transaction) => {
+            const transactionDetails = await fetchTransactionDetailsById(transaction.transaction);
+            return transactionDetails;
+        }))
+    )
+
+    transactionsData.reverse();
+
+    sendSuccess(
+        res,
+        200,
+        'Details of all transactions in the Group retrieved successfully!',
+        {
+            transactionsData
+        }
+    );
+})
+
+/**
+ * Fetch All Groups Summary
  * @route /groups/summary
  * @access Private
  */
@@ -194,7 +255,7 @@ export const getGroupsSummary = asyncErrorHandler(async (req, res, next) => {
                 createdBy: groupDoc.createdBy,
                 createdAt: groupDoc.createdAt,
                 selectedIcon: groupDoc.selectedIcon,
-                members:groupDoc.members,
+                members: groupDoc.members,
                 transactionCount,
                 userBalance
             };
