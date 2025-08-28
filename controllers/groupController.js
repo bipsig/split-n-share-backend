@@ -217,6 +217,7 @@ export const fetchGroupTransactionsDetails = asyncErrorHandler(async (req, res, 
         200,
         'Details of all transactions in the Group retrieved successfully!',
         {
+            count: transactionsData.count,
             transactionsData
         }
     );

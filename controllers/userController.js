@@ -14,6 +14,7 @@ import { getUserSettlementDetails } from "../utils/user/getUserSettlementDetails
 import { getGroupsSummaryDetails } from "../utils/user/getGroupsSummaryDetails.js";
 import { getRecentTransactionsSummary } from "../utils/user/getRecentTransactionsSummary.js";
 import { summarizeFinancialData } from "../utils/user/summarizeFinancialData.js";
+import { fetchTransactionDetailsById } from "../utils/transaction/fetchTransactionDetailsById.js";
 
 /**
  * Get logged in user details
@@ -39,12 +40,12 @@ export const getUserDetails = asyncErrorHandler(async (req, res, next) => {
     const userSettlementData = summarizeFinancialData(userBalanceData);
     user.totalBalance = userSettlementData.youGetBack - userSettlementData.youPay;
 
-        sendSuccess(
-            res,
-            200,
-            'User Details retrieved successfully!',
-            { user }
-        );
+    sendSuccess(
+        res,
+        200,
+        'User Details retrieved successfully!',
+        { user }
+    );
 })
 
 /**
@@ -254,7 +255,7 @@ export const getFinancialSummary = asyncErrorHandler(async (req, res, next) => {
         {
             youPay: userSettlementData.youPay,
             youGetBack: userSettlementData.youGetBack,
-            balance: userSettlementData.youGetBack - userSettlementData.youPay  ,
+            balance: userSettlementData.youGetBack - userSettlementData.youPay,
             peopleYouOwe: {
                 count: userSettlementData.youOwe.length,
                 data: userSettlementData.youOwe
@@ -325,6 +326,44 @@ export const getRecentTransactions = asyncErrorHandler(async (req, res, next) =>
         {
             count: data.length,
             data
+        }
+    );
+})
+
+/***
+ * Get all transactions of a User
+ * @route /users/all-transactions
+ * @access Private
+ */
+export const getAllTransactions = asyncErrorHandler(async (req, res, next) => {
+    const user = await User.findOne({
+        username: req.user.username
+    });
+
+    if (!user) {
+        return next(new AppError(
+            errorMessages.USER_NOT_FOUND,
+            404,
+            errorCodes.AUTH_USER_NOT_FOUND
+        ));
+    }
+
+    const transactionDocs = user.transactions;
+
+    const transactionsData = await Promise.all(
+       transactionDocs.map((async (transaction) => {
+            const transactionDetails = await fetchTransactionDetailsById(transaction.transaction);
+            return transactionDetails;
+        }))
+    );
+
+    sendSuccess(
+        res,
+        200,
+        'Details of all transactions of the user retrieved successfully!',
+        {
+            count: transactionsData.length,
+            transactionsData
         }
     );
 })

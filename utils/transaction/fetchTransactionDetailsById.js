@@ -2,6 +2,7 @@ import Transaction from "../../models/Transaction.js";
 import { AppError } from "../errors/appError.js";
 import { errorCodes } from "../errors/errorCodes.js";
 import { errorMessages } from "../errors/errorMessages.js";
+import { fetchGroupNameByGroupId } from "../group/fetchGroupNameByGroupId.js";
 
 export const fetchTransactionDetailsById = async (tId) => {
     try {
@@ -17,7 +18,13 @@ export const fetchTransactionDetailsById = async (tId) => {
             );
         }
 
-        return transaction;
+        const groupTitle = await fetchGroupNameByGroupId(transaction.groupId);
+
+        const transactionObj = transaction.toObject();
+
+        transactionObj.groupTitle = groupTitle.name;
+
+        return transactionObj;
     }
     catch (err) {
         if (err instanceof AppError) {
