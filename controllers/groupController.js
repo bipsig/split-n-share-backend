@@ -19,12 +19,14 @@ import { errorMessages } from "../utils/errors/errorMessages.js";
 import { fetchUserIdWithUsername } from "../utils/user/fetchUserIdWithUsername.js";
 import { calculateUserBalanceInGroup } from "../utils/group/calculateUserBalanceInGroup.js";
 import { fetchTransactionDetailsById } from "../utils/transaction/fetchTransactionDetailsById.js";
+import { createGroupActivity } from "../utils/activity/createGroupActivity.js";
 
 /**
  * Create a new group
  * @route POST /groups 
  * @access Private
  */
+
 export const createGroup = asyncErrorHandler(async (req, res, next) => {
     const { name, description, currency, category, selectedIcon } = req.body;
 
@@ -93,13 +95,24 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
     });
     await currentUser.save();
 
+    // CREATE GROUP CREATION ACTIVITY
+    await createGroupActivity({
+        activityType: 'GROUP_CREATED',
+        actor: {
+            userId: currentUser._id,
+            username: currentUser.username
+        },
+        group: savedGroup,
+        priority: 'high'
+    });
+
     sendSuccess(
         res,
         201,
         errorMessages.GROUP_CREATED_SUCCESS,
         { group: savedGroup }
     );
-})
+});
 
 /**
  * Fetch all groups user is a part of.
@@ -324,7 +337,9 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
+    const currentUser = await User.findById(userId);
     const responses = [];
+    
     for (let newUsername of newMembers) {
         const response = await addMemberToGroup(newUsername, group);
         responses.push({
@@ -345,6 +360,34 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
     group.markModified('transactionMatrix.colSum');
     await group.save();
 
+    // CREATE ACTIVITIES FOR EACH SUCCESSFULLY ADDED MEMBER
+    for (let addedUsername of addedMembers) {
+        // Get the added user's details
+        const addedUser = await User.findOne({ username: addedUsername });
+        
+        if (addedUser) {
+            await createGroupActivity({
+                activityType: 'GROUP_MEMBER_ADDED',
+                actor: {
+                    userId: currentUser._id,
+                    username: currentUser.username
+                },
+                group: group,
+                recipients: group.members.map(member => ({
+                    userId: member.user,
+                    username: member.username
+                })),
+                additionalContext: {
+                    targetUser: {
+                        userId: addedUser._id,
+                        username: addedUser.username
+                    }
+                },
+                priority: 'medium'
+            });
+        }
+    }
+
     sendSuccess(
         res,
         201,
@@ -356,7 +399,7 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
             failedCount: failedMembers.length
         }
     );
-})
+});
 
 /**
  * Toggle admin status of members of group
@@ -365,7 +408,6 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
  */
 export const toggleMemberAdmin = asyncErrorHandler(async (req, res, next) => {
     const { groupId, username } = req.params;
-
     const { userId } = req.user;
 
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
@@ -411,23 +453,46 @@ export const toggleMemberAdmin = asyncErrorHandler(async (req, res, next) => {
         ));
     }
 
+    const currentUser = await User.findById(userId);
+    const targetUser = await User.findOne({ username });
+    let wasPromoted = false;
+
     const updatedMembers = group.members.map((member) => {
         if (member.username.toString() === username) {
             if (member.role === 'Admin') {
-                member.role = 'Member'
-            }
-            else {
-                member.role = 'Admin'
+                member.role = 'Member';
+                wasPromoted = false;
+            } else {
+                member.role = 'Admin';
+                wasPromoted = true;
             }
         }
-
         return member;
-    })
+    });
 
     group.members = updatedMembers;
-
-
     await group.save();
+
+    // CREATE ACTIVITY FOR ADMIN PROMOTION/DEMOTION
+    await createGroupActivity({
+        activityType: wasPromoted ? 'GROUP_ADMIN_PROMOTED' : 'GROUP_ADMIN_DEMOTED',
+        actor: {
+            userId: currentUser._id,
+            username: currentUser.username
+        },
+        group: group,
+        recipients: group.members.map(member => ({
+            userId: member.user,
+            username: member.username
+        })),
+        additionalContext: {
+            targetUser: {
+                userId: targetUser._id,
+                username: targetUser.username
+            }
+        },
+        priority: 'medium'
+    });
 
     sendSuccess(
         res,
@@ -449,6 +514,8 @@ export const removeMembersFromGroup = asyncErrorHandler(async (req, res, next) =
     const { groupId } = req.params;
     const { userId } = req.user;
     const { removeMembers } = req.body;
+
+    const currentUser = await User.findOne({ _id: userId });
 
     if (!mongoose.Types.ObjectId.isValid(groupId)) {
         return next(new AppError(
@@ -512,6 +579,33 @@ export const removeMembersFromGroup = asyncErrorHandler(async (req, res, next) =
     group.markModified('transactionMatrix.rowSum');
     group.markModified('transactionMatrix.colSum');
     await group.save();
+
+    for (let removedUsername of removedMembers) {
+        // Get the added user's details
+        const removedUser = await User.findOne({ username: removedUsername });
+        
+        if (removedUser) {
+            await createGroupActivity({
+                activityType: 'GROUP_MEMBER_REMOVED',
+                actor: {
+                    userId: currentUser._id,
+                    username: currentUser.username
+                },
+                group: group,
+                recipients: group.members.map(member => ({
+                    userId: member.user,
+                    username: member.username
+                })),
+                additionalContext: {
+                    targetUser: {
+                        userId: removedUser._id,
+                        username: removedUser.username
+                    }
+                },
+                priority: 'medium'
+            });
+        }
+    }
 
     sendSuccess(
         res,

@@ -17,6 +17,7 @@ import { errorCodes } from "../utils/errors/errorCodes.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { deleteSingleTransaction } from "../utils/transaction/deleteSingleTransaction.js";
+import { createTransactionActivity } from "../utils/activity/createTransactionActivity.js";
 
 /**
  * Create a new transaction
@@ -73,7 +74,6 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
             errorCodes.VALIDATION_INVALID_FORMAT
         ));
     }
-
 
     const group = await fetchGroupDetailsById(groupId);
     if (!group) {
@@ -195,6 +195,34 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     group.markModified('transactionMatrix.colSum');
     await group.save();
 
+    // Get current user details
+    const currentUser = await User.findById(req.user.userId);
+
+    // CREATE TRANSACTION ACTIVITY
+    const activityType = type === 'Payment' ? 'PAYMENT_MADE' : 'EXPENSE_CREATED';
+    
+    let additionalContext = {};
+    if (type === 'Payment') {
+        // For payments, add the recipient information
+        const recipientUser = finalUsers[0]; // Payment has only one user involved
+        additionalContext.targetUser = {
+            userId: recipientUser.user,
+            username: recipientUser.username
+        };
+    }
+
+    await createTransactionActivity({
+        activityType,
+        actor: {
+            userId: currentUser._id,
+            username: currentUser.username
+        },
+        group: group,
+        transaction: result,
+        additionalContext,
+        priority: type === 'Payment' ? 'high' : 'medium'
+    });
+
     sendSuccess(
         res,
         201,
@@ -293,9 +321,62 @@ export const fetchTransactionDetails = asyncErrorHandler(async (req, res, next) 
 export const deleteTransaction = asyncErrorHandler(async (req, res, next) => {
     const { transactionId } = req.params;
 
-    await deleteSingleTransaction(req, transactionId);
+    // Get transaction details before deletion for activity logging
+    const transaction = await fetchTransactionDetailsById(transactionId);
+    if (!transaction) {
+        return next(new AppError(
+            'Transaction not found',
+            404,
+            errorCodes.TRANSACTION_NOT_FOUND
+        ));
+    }
 
+    const group = await fetchGroupDetailsById(transaction.groupId);
+    if (!group) {
+        return next(new AppError(
+            errorMessages.GROUP_NOT_FOUND,
+            404,
+            errorCodes.GROUP_NOT_FOUND
+        ));
+    }
+
+    if (!userInGroup(req.user.userId, group)) {
+        return next(new AppError(
+            errorMessages.GROUP_ACCESS_DENIED,
+            403,
+            errorCodes.GROUP_ACCESS_DENIED
+        ));
+    }
+
+    // Get current user details for activity
+    const currentUser = await User.findById(req.user.userId);
+
+    await deleteSingleTransaction(req, transactionId);
     await Transaction.findByIdAndDelete(transactionId);
+
+    // CREATE TRANSACTION DELETE ACTIVITY
+    const activityType = transaction.type === 'Payment' ? 'PAYMENT_DELETED' : 'EXPENSE_DELETED';
+    
+    let additionalContext = {};
+    if (transaction.type === 'Payment') {
+        // For payments, add the recipient information
+        additionalContext.targetUser = {
+            userId: transaction.users_involved[0].user,
+            username: transaction.users_involved[0].username
+        };
+    }
+
+    await createTransactionActivity({
+        activityType,
+        actor: {
+            userId: currentUser._id,
+            username: currentUser.username
+        },
+        group: group,
+        transaction: transaction,
+        additionalContext,
+        priority: 'medium'
+    });
 
     sendSuccess(
         res,
