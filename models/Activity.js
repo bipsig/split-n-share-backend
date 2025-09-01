@@ -8,7 +8,7 @@ const activitySchema = new mongoose.Schema({
       'EXPENSE_CREATED', 'EXPENSE_UPDATED', 'EXPENSE_DELETED',
 
       //Payment
-      'PAYMENT_MADE', 'PAYMENT_RECEIVED',
+      'PAYMENT_MADE',
 
       //Group
       'GROUP_CREATED', 'GROUP_UPDATED', 'GROUP_DELETED',
@@ -16,7 +16,7 @@ const activitySchema = new mongoose.Schema({
       'GROUP_ADMIN_PROMOTED', 'GROUP_ADMIN_DEMOTED',
 
       //Notifications
-      'NOTIFICATION_REMINDER_SENT', 'NOTIFICATION_PAYMENT_REQUESTED'
+      'NOTIFICATION_REMINDER_SENT'
     ],
     required: true
   },
