@@ -25,7 +25,9 @@ import { createTransactionActivity } from "../utils/activity/createTransactionAc
  * @access Private
  */
 export const createTransaction = asyncErrorHandler(async (req, res, next) => {
-    const { amount, user_paid, users_involved, groupId, description, type, category } = req.body;
+    const { amount: enteredAmount, user_paid, users_involved, groupId, description, type, category } = req.body;
+
+    const amount = parseFloat(enteredAmount);
 
     if (!amount) {
         return next(new AppError(
@@ -116,7 +118,8 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
                 errorCodes.GROUP_INVALID_MEMBER
             ));
         }
-        totalShare += user.share;
+        console.log (parseInt(parseFloat(user.share) * 100));
+        totalShare += (parseInt(parseFloat(user.share) * 100));
         finalUsers.push({
             user: userId,
             username: user.user,
@@ -124,7 +127,9 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         });
     }
 
-    if (parseFloat(totalShare) !== amount) {
+    console.log (totalShare);
+
+    if (totalShare !== (parseInt(parseFloat(amount) * 100))) {
         return next(new AppError(
             'Total share of all users must be equal to amount',
             400,
@@ -187,8 +192,9 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     }
 
     await userPaid.save();
-
-    group.totalBalance += amount
+    console.log (group.totalBalance);
+    console.log ('here', amount);
+    group.totalBalance += parseFloat(amount)
 
     group.markModified('transactionMatrix.matrix');
     group.markModified('transactionMatrix.rowSum');

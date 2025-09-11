@@ -33,7 +33,7 @@ export const getRecentTransactionsSummary = async (user) => {
       });
     }
 
-    return data;
+    return data.reverse();
   }
   catch (err) {
       if (err instanceof AppError) {

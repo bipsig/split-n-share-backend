@@ -120,6 +120,8 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
  * @access Private
  */
 export const fetchGroups = asyncErrorHandler(async (req, res, next) => {
+
+    await new Promise(resolve => setTimeout(resolve, 5000));
     const groups = await fetchGroupsByUsername(req.user.username);
 
     sendSuccess(
@@ -339,7 +341,7 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
 
     const currentUser = await User.findById(userId);
     const responses = [];
-    
+
     for (let newUsername of newMembers) {
         const response = await addMemberToGroup(newUsername, group);
         responses.push({
@@ -364,7 +366,7 @@ export const addMembersToGroup = asyncErrorHandler(async (req, res, next) => {
     for (let addedUsername of addedMembers) {
         // Get the added user's details
         const addedUser = await User.findOne({ username: addedUsername });
-        
+
         if (addedUser) {
             await createGroupActivity({
                 activityType: 'GROUP_MEMBER_ADDED',
@@ -583,7 +585,7 @@ export const removeMembersFromGroup = asyncErrorHandler(async (req, res, next) =
     for (let removedUsername of removedMembers) {
         // Get the added user's details
         const removedUser = await User.findOne({ username: removedUsername });
-        
+
         if (removedUser) {
             await createGroupActivity({
                 activityType: 'GROUP_MEMBER_REMOVED',
