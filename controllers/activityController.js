@@ -65,3 +65,22 @@ export const getAllActivities = asyncErrorHandler(async (req, res, next) => {
         }
     );
 });
+
+/**
+ * Delete all Activity
+ * @route DELETE activity/all 
+ * @access Private (Developer only)
+ */
+export const deleteAllActivity = asyncErrorHandler(async (req, res, next) => {
+
+    const result = await Activity.deleteMany({});
+
+    sendSuccess(
+        res,
+        200,
+        `${result.deletedCount} user(s) deleted successfully!`,
+        {
+            deletedCount: result.deletedCount
+        }
+    );
+})

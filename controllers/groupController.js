@@ -121,7 +121,7 @@ export const createGroup = asyncErrorHandler(async (req, res, next) => {
  */
 export const fetchGroups = asyncErrorHandler(async (req, res, next) => {
 
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    // await new Promise(resolve => setTimeout(resolve, 5000));
     const groups = await fetchGroupsByUsername(req.user.username);
 
     sendSuccess(

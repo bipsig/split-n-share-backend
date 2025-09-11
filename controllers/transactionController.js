@@ -28,6 +28,8 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     const { amount: enteredAmount, user_paid, users_involved, groupId, description, type, category } = req.body;
 
     const amount = parseFloat(enteredAmount);
+    console.log (`Amount: ${amount}`);
+    console.log (users_involved);
 
     if (!amount) {
         return next(new AppError(
@@ -118,8 +120,8 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
                 errorCodes.GROUP_INVALID_MEMBER
             ));
         }
-        console.log (parseInt(parseFloat(user.share) * 100));
-        totalShare += (parseInt(parseFloat(user.share) * 100));
+        // console.log (user.user, Math.round(parseFloat(user.share) * 100));
+        totalShare += (Math.round(parseFloat(user.share) * 100));
         finalUsers.push({
             user: userId,
             username: user.user,
@@ -127,7 +129,7 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
         });
     }
 
-    console.log (totalShare);
+    // console.log (totalShare);
 
     if (totalShare !== (parseInt(parseFloat(amount) * 100))) {
         return next(new AppError(
@@ -192,8 +194,8 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     }
 
     await userPaid.save();
-    console.log (group.totalBalance);
-    console.log ('here', amount);
+    // console.log (group.totalBalance);
+    // console.log ('here', amount);
     group.totalBalance += parseFloat(amount)
 
     group.markModified('transactionMatrix.matrix');
