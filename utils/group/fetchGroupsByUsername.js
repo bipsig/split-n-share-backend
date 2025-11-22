@@ -29,9 +29,10 @@ export const fetchGroupsByUsername = async (username) => {
 
         const updatedGroups = await Promise.all(
             user.groups.map(async (group) => {
-                const groupTitle = await Group.findById(group.group).select('name');
+                const extraGroupDetails = await Group.findById(group.group).select('name selectedIcon');
                 return {
-                    title: groupTitle?.name || 'Unknown',
+                    title: extraGroupDetails?.name || 'Unknown',
+                    selectedIcon: extraGroupDetails?.selectedIcon || 'Other',
                     groupId: group.group,
                     groupSlug: group.groupSlug,
                 };

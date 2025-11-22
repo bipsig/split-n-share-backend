@@ -196,7 +196,9 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     await userPaid.save();
     // console.log (group.totalBalance);
     // console.log ('here', amount);
-    group.totalBalance += parseFloat(amount)
+    if (type === 'Expense') {
+        group.totalBalance += parseFloat(amount)
+    }
 
     group.markModified('transactionMatrix.matrix');
     group.markModified('transactionMatrix.rowSum');
