@@ -50,6 +50,7 @@ export const updatePasswordWithUsername = async (body, username) => {
         const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
         user.password = hashedPassword;
+        user.passwordUpdationDate = Date.now();
 
         return user;
     }

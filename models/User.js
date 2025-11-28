@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema(
             required: [true, 'Password cannot be empty'],
             minlength: [5, 'Password is too short']
         },
+        passwordUpdationDate: {
+            type: Date,
+            default: Date.now
+        },
         mobileNumber: {
             type: String,
             default: '',
