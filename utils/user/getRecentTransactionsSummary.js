@@ -22,6 +22,8 @@ export const getRecentTransactionsSummary = async (user) => {
 
       const groupName = await fetchGroupNameByGroupId (transactionData.groupId);
 
+      console.log(transactionData);
+
       data.push ({
         transactionId: transactionData._id,
         transactionSlug: transactionData.slug,
@@ -29,6 +31,8 @@ export const getRecentTransactionsSummary = async (user) => {
         groupName,
         userPaid: transactionData.user_paid.username,
         amount: transactionData.amount,
+        category: transactionData.category,
+        type: transactionData.type,
         creationTime: transactionData.createdAt
       });
     }

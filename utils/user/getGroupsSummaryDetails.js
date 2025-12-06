@@ -22,6 +22,8 @@ export const getGroupsSummaryDetails = async (user) => {
 
       const currentTransactionMatrix = groupData.transactionMatrix;
 
+      console.log(groupData);
+
       const groupBalance = currentTransactionMatrix.rowSum[username] - currentTransactionMatrix.colSum[username];
 
       data.push ({
@@ -30,7 +32,8 @@ export const getGroupsSummaryDetails = async (user) => {
         members: groupData.members,
         groupSlug: groupData.slug,
         groupBalance,
-        type: groupBalance > 0 ? 'you are owed' : 'you owe'
+        selectedIcon: groupData.selectedIcon,
+        type: groupBalance > 0 ? 'you are owed' : groupBalance < 0 ? 'you owe' : 'settled up'
       });
     }
 
