@@ -31,15 +31,22 @@ app.use((req, res, next) => {
 
 const port = process.env.PORT || 3000;
 
-const mongo_uri = `mongodb+srv://${process.env.MONGODB_ATLAS_USERNAME}:${process.env.MONGODB_ATLAS_PASSWORD}@split-n-share.e8f54.mongodb.net/split-n-share?retryWrites=true&w=majority`;
+const dbName = 
+    process.env.NODE_ENV === 'development' 
+    ? 'split-n-share-' 
+    : process.env.NODE_ENV === 'production'
+    ? 'split-n-share-prod'
+    : 'split-n-share';
+
+const mongo_uri = `mongodb+srv://${process.env.MONGODB_ATLAS_USERNAME}:${process.env.MONGODB_ATLAS_PASSWORD}@split-n-share.e8f54.mongodb.net/${dbName}?retryWrites=true&w=majority`;
 
 const connectMongoDB = async () => {
     try {
-        await mongoose.connect(mongo_uri, {
+        const conn = await mongoose.connect(mongo_uri, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
-        console.log("Connected to MongoDB Atlas using Mongoose");
+        console.log (`Connected to MongoDB Atlas → Database: ${conn.connection.name}`)
     } catch (error) {
         console.error("Error connecting to MongoDB:", error);
     }
