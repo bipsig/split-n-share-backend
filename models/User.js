@@ -46,6 +46,15 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: ''
         },
+        dateOfBirth: {
+            type: Date,
+            required: [true, 'Date of Birth is required'],
+            default: Date.now
+        },
+        birthCity: {
+            type: String,
+            requireed: [true, 'Birth City is required'],
+        },
         location: {
             type: String,
             default: ''
@@ -66,6 +75,13 @@ const userSchema = new mongoose.Schema(
             },
             required: [true, 'Gender is required']
         },
+        resetPasswordToken: {
+            type: String,
+            default: ''
+        },
+        resetPasswordTokenExpiry: {
+            type: Date,
+        }, 
         groups: [
             {
                 _id: false,
