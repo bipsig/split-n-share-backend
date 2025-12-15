@@ -10,7 +10,6 @@ import userRoutes from './routes/userRoutes.js'
 import groupRoutes from './routes/groupRoutes.js'
 import transactionRoutes from './routes/transactionRoutes.js'
 import activityRoutes from './routes/activityRoutes.js'
-import { validateToken } from "./middleware/authMiddleware.js";
 import users from "./data/users.js";
 import { globalErrorHandler } from "./middleware/errorHandler.js";
 
@@ -135,8 +134,8 @@ app.use ('/api/v1/groups', groupRoutes);
 app.use ('/api/v1/transactions', transactionRoutes);
 app.use ('/api/v1/activity', activityRoutes);
 
+app.use (globalErrorHandler);
+
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server running at http://0.0.0.0:${port}`);
 });
-
-app.use (globalErrorHandler);
