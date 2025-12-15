@@ -56,7 +56,7 @@ connectMongoDB();
 
 app.get(`/api/${process.env.VERSION}health`, async (req, res) => {
     const DELAY_MS = 0; 
-    
+
     setTimeout(() => {
         const healthCheck = {
             status: 'OK',
@@ -90,40 +90,43 @@ app.get(`/api/${process.env.VERSION}health`, async (req, res) => {
 });
 
 
-app.get(`/api/${process.env.VERSION}sync`, async (req, res) => {
-    try {
-        console.log ("HERE");
-        mongoose.set('autoIndex', true);
-        const result = await User.syncIndexes();
-
-        res.send("Indexes synced!" + result);
-    }
-    catch (error) {
-        // console.error("Error saving user:", error);
-        res.status(500).send("Error syncing indices");
-    }
-});
-
-app.post(`/api/${process.env.VERSION}`, async (req, res) => {
-    try {
-        const userData = users;
-
-        await User.deleteMany();
-
-        for (let user of userData) {
-            // console.log (user);
-            const result = await axios.post (`${process.env.BASE_URL}${process.env.VERSION}auth/register`, user);
+if (process.env.NODE_ENV !== 'production') {
+    app.get(`/api/${process.env.VERSION}sync`, async (req, res) => {
+        try {
+            console.log ("HERE");
+            mongoose.set('autoIndex', true);
+            const result = await User.syncIndexes();
+    
+            res.send("Indexes synced!" + result);
         }
+        catch (error) {
+            // console.error("Error saving user:", error);
+            res.status(500).send("Error syncing indices");
+        }
+    });
+    
+    app.post(`/api/${process.env.VERSION}`, async (req, res) => {
+        try {
+            const userData = users;
+    
+            await User.deleteMany();
+    
+            for (let user of userData) {
+                // console.log (user);
+                const result = await axios.post (`${process.env.BASE_URL}${process.env.VERSION}auth/register`, user);
+            }
+    
+            // await User.insertMany(userData);
+            console.log('User data imported successfully!');
+    
+            res.status(201).json({ message: 'User data imported successfully!'})
+        } catch (error) {
+            // console.error("Error saving user:", error);
+            res.status(500).send("Error creating user");
+        }
+    });
 
-        // await User.insertMany(userData);
-        console.log('User data imported successfully!');
-
-        res.status(201).json({ message: 'User data imported successfully!'})
-    } catch (error) {
-        // console.error("Error saving user:", error);
-        res.status(500).send("Error creating user");
-    }
-});
+}
 
 
 app.use ('/api/v1/auth', authRoutes);
