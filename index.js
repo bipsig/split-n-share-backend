@@ -53,7 +53,7 @@ const connectMongoDB = async () => {
 
 connectMongoDB();
 
-app.get(`/api/${process.env.VERSION}health`, async (req, res) => {
+app.get(`/api/${process.env.VERSION}/health`, async (req, res) => {
     const DELAY_MS = 0; 
 
     setTimeout(() => {
@@ -90,7 +90,7 @@ app.get(`/api/${process.env.VERSION}health`, async (req, res) => {
 
 
 if (process.env.NODE_ENV !== 'production') {
-    app.get(`/api/${process.env.VERSION}sync`, async (req, res) => {
+    app.get(`/api/${process.env.VERSION}/sync`, async (req, res) => {
         try {
             console.log ("HERE");
             mongoose.set('autoIndex', true);
