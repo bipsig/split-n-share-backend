@@ -12,7 +12,7 @@ import { generateGroupSlug } from "../utils/group/generateGroupSlug.js";
 import { addMemberToTransactionMatrix } from "../utils/transactionMatrix/addMemberToTransactionMatrix.js";
 import { fetchUsernameWithUserId } from "../utils/user/fetchUsernameWithUserId.js";
 import { removeMemberFromTransactionMatrix } from "../utils/transactionMatrix/removeMemberFromTransactionMatrix.js";
-import { AppError } from "../utils/errors/appError.js";
+import { AppError } from "../utils/errors/AppError.js";
 import { errorCodes } from "../utils/errors/errorCodes.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";

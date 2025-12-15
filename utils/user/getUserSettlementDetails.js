@@ -1,5 +1,5 @@
 import Group from "../../models/Group.js";
-import { AppError } from "../errors/appError.js";
+import { AppError } from "../errors/AppError.js";
 import { errorCodes } from "../errors/errorCodes.js";
 
 export const getUserSettlementDetails = async (user) => {

@@ -8,7 +8,7 @@ import { createToken } from "../utils/createToken.js";
 import { asyncErrorHandler } from "../utils/errors/asyncErrorHandler.js";
 import { errorCodes } from "../utils/errors/errorCodes.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
-import { AppError } from "../utils/errors/appError.js";
+import { AppError } from "../utils/errors/AppError.js";
 import { sendSuccess } from "../utils/errors/responseHandler.js";
 
 /**

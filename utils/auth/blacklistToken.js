@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 import Blacklist from "../../models/Blacklist.js";
 import { errorCodes } from "../errors/errorCodes.js";
-import { AppError } from "../errors/appError.js";
+import { AppError } from "../errors/AppError.js";
 
 export const blacklistToken = async (token) => {
     try {

@@ -1,5 +1,5 @@
 import User from "../../models/User.js";
-import { AppError } from "../errors/appError.js";
+import { AppError } from "../errors/AppError.js";
 
 export const fetchUsernameWithUserId = async (userId) => {
     try {

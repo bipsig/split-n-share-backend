@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import Blacklist from "../models/Blacklist.js";
 import { asyncErrorHandler } from "../utils/errors/asyncErrorHandler.js";
-import { AppError } from "../utils/errors/appError.js";
+import { AppError } from "../utils/errors/AppError.js";
 import { errorMessages } from "../utils/errors/errorMessages.js";
 import { errorCodes } from "../utils/errors/errorCodes.js";
 

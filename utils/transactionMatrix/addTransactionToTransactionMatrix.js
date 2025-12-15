@@ -1,4 +1,4 @@
-import { AppError } from "../errors/appError.js";
+import { AppError } from "../errors/AppError.js";
 import { errorCodes } from "../errors/errorCodes.js";
 
 export const addTransactionToTransactionMatrix = (transactionMatrix, user_paid, users_involved, amount) => {

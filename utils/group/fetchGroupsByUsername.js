@@ -1,6 +1,6 @@
 import Group from "../../models/Group.js";
 import User from "../../models/User.js";
-import { AppError } from "../errors/appError.js";
+import { AppError } from "../errors/AppError.js";
 import { errorCodes } from "../errors/errorCodes.js";
 import { errorMessages } from "../errors/errorMessages.js";
 

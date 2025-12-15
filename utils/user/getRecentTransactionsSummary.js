@@ -1,5 +1,5 @@
 import Transaction from "../../models/Transaction.js";
-import { AppError } from "../errors/appError.js";
+import { AppError } from "../errors/AppError.js";
 import { errorCodes } from "../errors/errorCodes.js";
 import { fetchGroupNameByGroupId } from "../group/fetchGroupNameByGroupId.js";
 
