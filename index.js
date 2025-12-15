@@ -32,7 +32,7 @@ const port = process.env.PORT || 3000;
 
 const dbName = 
     process.env.NODE_ENV === 'development' 
-    ? 'split-n-share-' 
+    ? 'split-n-share-dev' 
     : process.env.NODE_ENV === 'production'
     ? 'split-n-share-prod'
     : 'split-n-share';
