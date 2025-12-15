@@ -54,7 +54,43 @@ const connectMongoDB = async () => {
 
 connectMongoDB();
 
-app.get(`/api/${process.env.VERSION}/sync`, async (req, res) => {
+app.get(`/api/${process.env.VERSION}health`, async (req, res) => {
+    const DELAY_MS = 0; 
+    
+    setTimeout(() => {
+        const healthCheck = {
+            status: 'OK',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime(),
+            environment: process.env.NODE_ENV || 'development',
+            service: 'Split-N-Share API'
+        };
+
+        const dbState = mongoose.connection.readyState;
+        const dbStatus = {
+            0: 'disconnected',
+            1: 'connected',
+            2: 'connecting',
+            3: 'disconnecting'
+        };
+
+        healthCheck.database = {
+            status: dbStatus[dbState],
+            connected: dbState === 1,
+            name: mongoose.connection.name
+        };
+
+        if (dbState === 1) {
+            res.status(200).json(healthCheck);
+        } else {
+            healthCheck.status = 'DEGRADED';
+            res.status(503).json(healthCheck);
+        }
+    }, DELAY_MS);
+});
+
+
+app.get(`/api/${process.env.VERSION}sync`, async (req, res) => {
     try {
         console.log ("HERE");
         mongoose.set('autoIndex', true);

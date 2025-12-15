@@ -54,7 +54,7 @@ export const getUserDetails = asyncErrorHandler(async (req, res, next) => {
  * @access Private
  */
 export const updateDetails = asyncErrorHandler(async (req, res, next) => {
-    console.log(`Updating details of user with username '${req.user.username}'`);
+    // console.log(`Updating details of user with username '${req.user.username}'`);
 
     const user = await updateUserWithUsername(req.body, req.user.username);
     await user.save();
@@ -87,7 +87,7 @@ export const updateDetails = asyncErrorHandler(async (req, res, next) => {
  * @access Public
  */
 export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
-    console.log('Checking whether email is unique or not');
+    // console.log('Checking whether email is unique or not');
 
     const { email } = req.query;
 
@@ -98,7 +98,7 @@ export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
             errorCodes.VALIDATION_REQUIRED_FIELD
         ));
     }
-    console.log(email.trim());
+    // console.log(email.trim());
     const emailExists = await checkEmailExists(email.trim());
 
     if (emailExists) {
@@ -131,7 +131,7 @@ export const isEmailUnique = asyncErrorHandler(async (req, res, next) => {
  * @access Private 
  */
 export const searchUser = asyncErrorHandler(async (req, res, next) => {
-    console.log('Searching for users....');
+    // console.log('Searching for users....');
 
     const { query } = req.query;
 
@@ -171,7 +171,7 @@ export const searchUser = asyncErrorHandler(async (req, res, next) => {
  * @access Private 
  */
 export const updatePassword = asyncErrorHandler(async (req, res, next) => {
-    console.log(`Updating password of user '${req.user.username}'`);
+    // console.log(`Updating password of user '${req.user.username}'`);
 
     const user = await updatePasswordWithUsername(req.body, req.user.username);
     await user.save();
@@ -192,7 +192,7 @@ export const updatePassword = asyncErrorHandler(async (req, res, next) => {
  * @access Private
  */
 export const deleteUser = asyncErrorHandler(async (req, res, next) => {
-    console.log(`Deleting user with username ${req.user.username}`);
+    // console.log(`Deleting user with username ${req.user.username}`);
 
     await deleteUserWithUsername(req.user.username);
 
@@ -374,7 +374,7 @@ export const getAllTransactions = asyncErrorHandler(async (req, res, next) => {
  * @access Private (Developer only)
  */
 export const getAllUsers = asyncErrorHandler(async (req, res, next) => {
-    console.log('Getting all registered users');
+    // console.log('Getting all registered users');
     const users = await User.find({}).select('-password');
 
     sendSuccess(
@@ -394,7 +394,7 @@ export const getAllUsers = asyncErrorHandler(async (req, res, next) => {
  * @access Private (Developer only)
  */
 export const deleteAllUsers = asyncErrorHandler(async (req, res, next) => {
-    console.log("Deleting all Users");
+    // console.log("Deleting all Users");
 
     const result = await User.deleteMany({});
 

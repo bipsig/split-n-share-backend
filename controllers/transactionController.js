@@ -28,8 +28,8 @@ export const createTransaction = asyncErrorHandler(async (req, res, next) => {
     const { amount: enteredAmount, user_paid, users_involved, groupId, description, type, category } = req.body;
 
     const amount = parseFloat(enteredAmount);
-    console.log (`Amount: ${amount}`);
-    console.log (users_involved);
+    // console.log (`Amount: ${amount}`);
+    // console.log (users_involved);
 
     if (!amount) {
         return next(new AppError(
@@ -266,7 +266,7 @@ export const fetchTransactionsOfAGroup = asyncErrorHandler(async (req, res, next
         ));
     }
 
-    console.log(group);
+    // console.log(group);
 
     const transactions = group.transactions;
 

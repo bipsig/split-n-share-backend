@@ -61,7 +61,7 @@ export const register = asyncErrorHandler(async (req, res, next) => {
 
     savedUser.password = undefined;
 
-    console.log('User registered successfully!')
+    // console.log('User registered successfully!')
 
     sendSuccess(
         res,
